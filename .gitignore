@@ -1,0 +1,11 @@
+.DS_Store
+tmp/
+
+# LaTeX build intermediates
+*.aux
+*.log
+*.out
+*.xdv
+*.synctex.gz
+*.fls
+*.fdb_latexmk
