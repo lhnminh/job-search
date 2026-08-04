@@ -1,6 +1,13 @@
 .DS_Store
 tmp/
 
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
 # LaTeX build intermediates
 *.aux
 *.log
