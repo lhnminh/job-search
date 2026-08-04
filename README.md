@@ -2,7 +2,7 @@
 
 Each resume version can live in its own internal folder and keep `_resume.tex` plus any local style or font files it needs.
 
-The `resume-general/` folder is the comprehensive reference resume. It accumulates all verified positions, bullet points, and projects and may span multiple pages. It is not constrained to be submission-ready. Application-specific versions should start from this reference and select, reorder, or tailor the most relevant content.
+The `source-of-truth/` folder is the comprehensive reference resume. It accumulates all verified positions, bullet points, and projects and may span multiple pages. It is not constrained to be submission-ready. Application-specific versions should start from this reference and select, reorder, or tailor the most relevant content.
 
 Build the current version:
 
@@ -14,7 +14,7 @@ Every build writes the selected internal version to `output/pdf/Morgan_Le_Resume
 
 To create another version:
 
-1. Duplicate `resume-general/` and give the copy a new internal version name.
+1. Duplicate `source-of-truth/` and give the copy a new internal version name.
 2. Select, reorder, and tailor the relevant content in that version's `_resume.tex`.
 3. Run the script with the new internal folder name.
 
