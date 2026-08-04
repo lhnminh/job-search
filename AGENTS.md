@@ -6,21 +6,21 @@ This repository maintains one comprehensive resume reference and multiple applic
 
 Before editing, identify which of these the user is requesting:
 
-1. A change to the comprehensive reference in `source-of-truth/`.
+1. A change to the comprehensive reference in the repository root `_resume.tex`.
 2. A change to an existing tailored version.
 3. A new tailored version for a job, company, or discipline.
 
 Do not treat these as interchangeable.
 
-## Canonical Reference: `source-of-truth/`
+## Canonical Reference: Root `_resume.tex`
 
-`source-of-truth/` is the canonical content library and source of truth for verified resume facts.
+The repository root `_resume.tex` is the canonical content library and source of truth for verified resume facts. Its rendered counterpart is the root `Morgan_Le_Resume.pdf`.
 
 - It should accumulate all verified positions, bullet points, projects, skills, awards, and education details.
 - It may be two or more pages. Do not shorten it merely to meet a one-page resume convention.
 - Do not remove content from it to make a tailored application stronger.
 - Preserve unrelated reference content whenever adding or updating material.
-- Build new tailored versions from the latest `source-of-truth/` unless the user explicitly names another starting point.
+- Build new tailored versions from the latest root `_resume.tex` unless the user explicitly names another starting point.
 
 ### Default merge semantics
 
@@ -36,20 +36,20 @@ If a supplied attachment contains a full LaTeX document but the user asks to use
 
 ## Tailored Versions
 
-Tailored versions live in folders named `resume-<purpose>` or `resume-<company-role>`.
+Tailored versions live in folders named `<purpose>` or `<company-role>`.
 
 Examples:
 
-- `resume-finance-consulting/`
-- `resume-macquarie-asset-management/`
+- `finance-consulting/`
+- `macquarie-asset-management/`
 
 For a new tailored version:
 
-1. Copy the latest `source-of-truth/`.
-2. Give the copy a descriptive internal folder name.
+1. Create a descriptive internal folder.
+2. Copy only the latest root `_resume.tex` into it.
 3. Select, reorder, condense, or rewrite the most relevant verified content.
 4. Preserve factual accuracy and quantified outcomes.
-5. Build and visually verify the tailored version.
+5. Build and visually verify the tailored version, which creates its folder-owned PDF.
 
 Tailored versions are selective snapshots. They do not replace the reference and do not automatically update existing variants unless the user asks for synchronization.
 
@@ -64,7 +64,7 @@ Tailored versions are selective snapshots. They do not replace the reference and
 
 ## Projects Are Additive
 
-Projects in `source-of-truth/` are a reference inventory.
+Projects in the root `_resume.tex` are a reference inventory.
 
 - Adding a project means placing it alongside existing projects.
 - Do not infer that a newly supplied project should replace the currently visible project.
@@ -80,13 +80,16 @@ Use the existing build script:
 ./scripts/build_resume.sh "resume-folder-name"
 ```
 
-- No argument builds `source-of-truth/`.
+- No argument builds the root source of truth.
 - A folder argument builds that internal version.
-- Every build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
-- `source-of-truth/Morgan_Le_Resume.pdf` is the rendered comprehensive reference.
-- Each tailored folder owns its own independent PDF beside `_resume.tex`.
+- The source-of-truth build writes root `Morgan_Le_Resume.pdf`.
+- A tailored build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
+- Every tailored resume folder must contain only `_resume.tex` and its independent `Morgan_Le_Resume.pdf`.
+- Shared LaTeX classes, styles, and fonts belong only in `shared/latex/`.
+- Do not duplicate shared support files inside resume folders.
+- The build script must compile in a temporary directory containing the selected `_resume.tex` and copied `shared/latex/` files.
 - Do not expose internal version names in the PDF filename.
-- A build may overwrite only the PDF inside the selected folder. It must never overwrite another version's PDF.
+- A build may overwrite only the root PDF or the PDF inside the selected tailored folder. It must never overwrite another version's PDF.
 - Do not use a shared output PDF or a central `output/pdf/` directory.
 - Tectonic is installed through Homebrew. Prefer the installed `tectonic` command.
 - Build intermediates must remain temporary and should be removed after verification.
@@ -103,7 +106,7 @@ After every resume build:
 6. Confirm hyperlinks remain present.
 7. Remove temporary QA files before completing the task.
 
-For `source-of-truth/`, multiple pages are acceptable. Use clean page boundaries rather than deleting content. For tailored versions, optimize page count only when appropriate to the application or explicitly requested.
+For the root source of truth, multiple pages are acceptable. Use clean page boundaries rather than deleting content. For tailored versions, optimize page count only when appropriate to the application or explicitly requested.
 
 ## Editing Workflow
 

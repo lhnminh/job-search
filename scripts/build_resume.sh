@@ -3,9 +3,10 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-SOURCE_DIR_ARG="${1:-source-of-truth}"
+SOURCE_DIR_ARG="${1:-.}"
 SOURCE_NAME="_resume.tex"
 OUTPUT_NAME="Morgan_Le_Resume.pdf"
+SHARED_LATEX_DIR="$REPO_ROOT/shared/latex"
 
 if (( $# > 1 )); then
   echo "Usage: $0 [resume-folder]" >&2
@@ -15,7 +16,7 @@ fi
 
 SOURCE_DIR="$(cd "$REPO_ROOT/$SOURCE_DIR_ARG" && pwd -P)"
 case "$SOURCE_DIR" in
-  "$REPO_ROOT"/*) ;;
+  "$REPO_ROOT"|"$REPO_ROOT"/*) ;;
   *)
     echo "Resume folder must be inside $REPO_ROOT." >&2
     exit 2
@@ -24,6 +25,11 @@ esac
 
 if [[ ! -f "$SOURCE_DIR/$SOURCE_NAME" ]]; then
   echo "Resume source not found: $SOURCE_DIR/$SOURCE_NAME" >&2
+  exit 2
+fi
+
+if [[ ! -d "$SHARED_LATEX_DIR" ]]; then
+  echo "Shared LaTeX support directory not found: $SHARED_LATEX_DIR" >&2
   exit 2
 fi
 
@@ -46,8 +52,11 @@ else
   exit 2
 fi
 
+cp -R "$SHARED_LATEX_DIR/." "$BUILD_DIR/"
+cp "$SOURCE_DIR/$SOURCE_NAME" "$BUILD_DIR/$SOURCE_NAME"
+
 (
-  cd "$SOURCE_DIR"
+  cd "$BUILD_DIR"
   "$TECTONIC_BIN" --keep-logs --outdir "$BUILD_DIR" "$SOURCE_NAME"
 )
 
