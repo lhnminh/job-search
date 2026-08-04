@@ -27,7 +27,7 @@ if [[ ! -f "$SOURCE_DIR/$SOURCE_NAME" ]]; then
   exit 2
 fi
 
-OUTPUT_DIR="$REPO_ROOT/output/pdf"
+OUTPUT_PATH="$SOURCE_DIR/$OUTPUT_NAME"
 BUILD_DIR="$(mktemp -d /tmp/morgan-resume-build.XXXXXX)"
 
 cleanup() {
@@ -46,12 +46,10 @@ else
   exit 2
 fi
 
-mkdir -p "$OUTPUT_DIR"
-
 (
   cd "$SOURCE_DIR"
   "$TECTONIC_BIN" --keep-logs --outdir "$BUILD_DIR" "$SOURCE_NAME"
 )
 
-cp "$BUILD_DIR/${SOURCE_NAME%.tex}.pdf" "$OUTPUT_DIR/$OUTPUT_NAME"
-echo "Created $OUTPUT_DIR/$OUTPUT_NAME"
+cp "$BUILD_DIR/${SOURCE_NAME%.tex}.pdf" "$OUTPUT_PATH"
+echo "Created $OUTPUT_PATH"

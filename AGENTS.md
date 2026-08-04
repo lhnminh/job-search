@@ -82,9 +82,12 @@ Use the existing build script:
 
 - No argument builds `source-of-truth/`.
 - A folder argument builds that internal version.
-- Every build writes exactly `output/pdf/Morgan_Le_Resume.pdf`.
-- Do not expose internal version names in the public PDF filename.
-- A build intentionally overwrites the previous public PDF.
+- Every build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
+- `source-of-truth/Morgan_Le_Resume.pdf` is the rendered comprehensive reference.
+- Each tailored folder owns its own independent PDF beside `_resume.tex`.
+- Do not expose internal version names in the PDF filename.
+- A build may overwrite only the PDF inside the selected folder. It must never overwrite another version's PDF.
+- Do not use a shared output PDF or a central `output/pdf/` directory.
 - Tectonic is installed through Homebrew. Prefer the installed `tectonic` command.
 - Build intermediates must remain temporary and should be removed after verification.
 

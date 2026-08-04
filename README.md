@@ -10,7 +10,7 @@ Build the current version:
 ./scripts/build_resume.sh
 ```
 
-Every build writes the selected internal version to `output/pdf/Morgan_Le_Resume.pdf`. The public filename is fixed even when a different internal resume version is selected. Build intermediates are created in the system temporary directory and removed automatically.
+Every build writes `Morgan_Le_Resume.pdf` inside the selected internal resume folder. The source-of-truth build is therefore stored at `source-of-truth/Morgan_Le_Resume.pdf`, while each tailored version keeps its own PDF alongside its `_resume.tex` source. Building one version never overwrites another version's PDF. Build intermediates are created in the system temporary directory and removed automatically.
 
 To create another version:
 
@@ -34,7 +34,7 @@ Build the Macquarie Asset Management application version:
 
 The `resume-macquarie-asset-management/` version emphasizes real estate, client solutions, commercial analytics, quantitative analysis, Excel, infrastructure, and long-term value creation.
 
-Running a build for another internal version intentionally replaces the existing `Morgan_Le_Resume.pdf`. The script uses the installed `tectonic` command, or the executable specified by `RESUME_TECTONIC_BIN`.
+Rebuilding a version intentionally replaces only the `Morgan_Le_Resume.pdf` inside that same internal folder. The script uses the installed `tectonic` command, or the executable specified by `RESUME_TECTONIC_BIN`.
 
 ## Python environment
 
