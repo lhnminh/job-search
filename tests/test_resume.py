@@ -4,14 +4,17 @@ import unittest
 from pathlib import Path
 
 from resume_cli.resume import (
+    apply_line_decisions,
     append_bullet,
     append_bullet_by_title,
     parse_resume,
+    prepare_interactive_tailored_source,
     remove_bullet,
     resume_path,
     replace_bullet,
     slugify,
     validate_root_append_only,
+    validate_tailored_completeness,
     validate_tailored_tex,
 )
 
@@ -45,6 +48,30 @@ class ResumeParserTests(unittest.TestCase):
         updated = parse_resume(changed).entry(bcg.id)
         self.assertEqual(2, len(updated.bullets))
         self.assertIn("Partnered with", updated.bullets[0].text)
+
+    def test_interactive_base_compacts_layout_without_changing_line_ids(self) -> None:
+        prepared = prepare_interactive_tailored_source(self.source)
+        prepared_document = parse_resume(prepared)
+        self.assertIn("\\documentclass[10pt,a4paper,sans]{moderncv}", prepared)
+        self.assertNotIn("\n\\newpage\n", prepared)
+        self.assertEqual(
+            [bullet.id for entry in self.document.entries for bullet in entry.bullets],
+            [bullet.id for entry in prepared_document.entries for bullet in entry.bullets],
+        )
+
+    def test_interactive_decisions_replay_against_stable_base(self) -> None:
+        prepared = prepare_interactive_tailored_source(self.source)
+        document = parse_resume(prepared)
+        bcg = next(entry for entry in document.entries if entry.title == "Boston Consulting Group (BCG)")
+        decisions = {
+            bcg.bullets[0].id: {"action": "rewrite", "text": "Rewritten verified consulting result."},
+            bcg.bullets[-1].id: {"action": "remove"},
+        }
+        changed = apply_line_decisions(prepared, decisions)
+        updated = parse_resume(changed).entry(bcg.id)
+        self.assertEqual("Rewritten verified consulting result.", updated.bullets[0].text)
+        self.assertFalse(any(bullet.is_metadata for bullet in updated.bullets))
+        self.assertEqual(2, len(updated.bullets))
 
     def test_append_is_additive_and_idempotent(self) -> None:
         bcg = next(entry for entry in self.document.entries if entry.title == "Boston Consulting Group (BCG)")
@@ -90,6 +117,22 @@ class ResumeParserTests(unittest.TestCase):
         changed = self.source.replace("data-driven analyses", "\\$999M of data-driven analyses", 1)
         errors = validate_tailored_tex(self.source, changed, ["The project involved $999M."])
         self.assertFalse(any("$999M" in error for error in errors))
+
+    def test_generated_tailor_requires_every_experience_entry(self) -> None:
+        peloton_start = self.source.index("{\\customcventry{\\href{https://www.onepeloton.com/company}{Peloton}}")
+        samsung_start = self.source.index(
+            "{\\customcventry{\\href{https://www.samsung.com/us/about-us/our-business/}{Samsung Electronics America}}"
+        )
+        missing_peloton = self.source[:peloton_start] + self.source[samsung_start:]
+        errors = validate_tailored_completeness(self.source, missing_peloton)
+        self.assertIn("Missing experience entry: Peloton", errors)
+
+    def test_generated_tailor_requires_one_substantive_bullet_per_position(self) -> None:
+        bcg = next(entry for entry in self.document.entries if entry.title == "Boston Consulting Group (BCG)")
+        shortened = remove_bullet(self.source, bcg.bullets[1].id)
+        shortened = remove_bullet(shortened, parse_resume(shortened).entry(bcg.id).bullets[0].id)
+        errors = validate_tailored_completeness(self.source, shortened)
+        self.assertTrue(any("Too few substantive bullets for Boston Consulting Group" in error for error in errors))
 
     def test_slugify(self) -> None:
         self.assertEqual("macquarie-real-estate-intern", slugify("Macquarie — Real Estate Intern"))

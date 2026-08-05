@@ -246,6 +246,49 @@ def remove_bullet(source: str, bullet_id: str) -> str:
     return source[: bullet.raw_start] + source[bullet.raw_end :]
 
 
+def prepare_interactive_tailored_source(source: str) -> str:
+    """Create a compact working copy without changing factual resume content."""
+    prepared = re.sub(r"(?m)^[ \t]*\\newpage[ \t]*\n?", "", source)
+    prepared = prepared.replace(
+        "\\documentclass[11pt,a4paper,sans]{moderncv}",
+        "\\documentclass[10pt,a4paper,sans]{moderncv}",
+        1,
+    )
+    prepared = prepared.replace("\\newcommand*{\\customcventry}[5][0.8em]", "\\newcommand*{\\customcventry}[5][0.45em]", 1)
+    prepared = prepared.replace("\\fontsize{12}{12}", "\\fontsize{11.5}{11.5}")
+    prepared = prepared.replace("\\par\\addvspace{0.15em}", "\\par\\addvspace{0.05em}")
+    if "\\renewcommand{\\baselinestretch}" not in prepared:
+        prepared = prepared.replace(
+            "\\renewcommand{\\labelitemi}{\\textbullet}",
+            "\\renewcommand{\\labelitemi}{\\textbullet}\n\\renewcommand{\\baselinestretch}{0.96}",
+            1,
+        )
+    if "\\makecvtitle\n\\vspace" not in prepared:
+        prepared = prepared.replace("\\makecvtitle % Print the CV title", "\\makecvtitle % Print the CV title\n\\vspace{-1.3em}", 1)
+    return prepared
+
+
+def apply_line_decisions(base_source: str, decisions: dict[str, dict[str, str]]) -> str:
+    """Rebuild a draft from stable base offsets and explicit per-line decisions."""
+    document = parse_resume(base_source)
+    edits: list[tuple[int, int, str]] = []
+    for entry in document.entries:
+        for bullet in entry.bullets:
+            decision = decisions.get(bullet.id)
+            if not decision or decision.get("action") == "keep":
+                continue
+            if decision.get("action") == "remove":
+                edits.append((bullet.raw_start, bullet.raw_end, ""))
+                continue
+            replacement = decision.get("text", "").strip()
+            if replacement:
+                edits.append((bullet.body_start, bullet.body_end, replacement))
+    result = base_source
+    for start, end, replacement in sorted(edits, reverse=True):
+        result = result[:start] + replacement + result[end:]
+    return result
+
+
 def append_bullet(source: str, entry_id: str, bullet_text: str) -> str:
     document = parse_resume(source)
     entry = document.entry(entry_id)
@@ -338,6 +381,37 @@ def validate_tailored_tex(
     extra_claims = numeric_claims(proposed_source) - verified_claims
     if extra_claims:
         errors.append("Unverified numeric claims: " + ", ".join(sorted(extra_claims)))
+    return errors
+
+
+def validate_tailored_completeness(root_source: str, proposed_source: str) -> list[str]:
+    """Require generated variants to retain every role and useful bullet depth."""
+    try:
+        root = parse_resume(root_source)
+        proposed = parse_resume(proposed_source)
+    except ResumeParseError as exc:
+        return [str(exc)]
+
+    proposed_experience = {
+        entry.title.casefold(): entry
+        for entry in proposed.entries
+        if "experience" in entry.section.casefold()
+    }
+    errors: list[str] = []
+    for root_entry in root.entries:
+        if "experience" not in root_entry.section.casefold():
+            continue
+        proposed_entry = proposed_experience.get(root_entry.title.casefold())
+        if proposed_entry is None:
+            errors.append(f"Missing experience entry: {root_entry.title}")
+            continue
+        root_substantive = sum(not bullet.is_metadata for bullet in root_entry.bullets)
+        proposed_substantive = sum(not bullet.is_metadata for bullet in proposed_entry.bullets)
+        minimum = min(1, root_substantive)
+        if proposed_substantive < minimum:
+            errors.append(
+                f"Too few substantive bullets for {root_entry.title}: expected at least {minimum}, got {proposed_substantive}"
+            )
     return errors
 
 

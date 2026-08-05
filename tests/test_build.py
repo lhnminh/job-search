@@ -4,8 +4,9 @@ import unittest
 import shutil
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
-from resume_cli.build import build_resume, verify_pdf
+from resume_cli.build import build_resume, render_pdf, verify_pdf
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -41,6 +42,13 @@ class PdfVerificationTests(unittest.TestCase):
                 temporary_root.rmdir()
             except OSError:
                 pass
+
+    def test_render_pdf_falls_back_when_pdftoppm_is_not_on_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("resume_cli.build.shutil.which", return_value=None):
+                images = render_pdf(REPO_ROOT / "Morgan_Le_Resume.pdf", Path(directory))
+            self.assertEqual(2, len(images))
+            self.assertTrue(all(path.is_file() for path in images))
 
 
 if __name__ == "__main__":

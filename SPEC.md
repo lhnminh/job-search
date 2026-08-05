@@ -6,7 +6,7 @@ Provide a local terminal tool that feels like a focused Codex chat for creating 
 
 The tool has two modes:
 
-1. **Tailor:** Create a one-page application-specific resume from a pasted job description.
+1. **Tailor:** Create a polished one-page application-specific resume from a pasted job description.
 2. **Review:** Walk through a resume section by section and bullet by bullet with conversational Codex feedback.
 
 ## Canonical content
@@ -30,17 +30,21 @@ The tool has two modes:
 The user pastes a job description as terminal text. The tool then:
 
 1. Starts a repository-aware Codex thread in a read-only sandbox.
-2. Analyzes the job description and the root resume.
-3. Suggests a descriptive folder slug.
-4. Proposes the selected, ordered, and rewritten LaTeX resume.
-5. Shows the recommendation and accepts natural-language revision instructions.
-6. Requires confirmation before creating or overwriting a folder.
-7. Validates the proposal against verified root facts and historical titles.
-8. Runs a Codex fact-audit comparing every proposed claim with the root source and explicit user confirmations.
-9. Builds the proposed version with the existing Tectonic build script.
-10. Iterates on content density when necessary until the tailored PDF is exactly one A4 page.
-11. Verifies page count, page size, extractable text, and hyperlinks.
-12. Renders every final PDF page and asks the same read-only Codex thread to reject clipping, overlap, broken glyphs, awkward page breaks, or orphaned headings.
+2. Creates a compact working copy of the complete root resume without changing its content facts, contact header, employer names, historical titles, or dates.
+3. Sends all content lines to Codex in one batch so the initial analysis does not require one model request per line.
+4. Walks through every education, experience, project, and technology/tool bullet individually. The contact header is excluded, while entry headers are shown as locked context.
+5. Requires an explicit decision for every line: accept the displayed recommendation, keep, remove, regenerate, go back, undo, quit, or provide a natural-language instruction.
+6. Saves every decision immediately so the session can resume at the same line.
+7. Suggests a descriptive folder slug and requires confirmation before creating or overwriting a folder.
+8. Builds temporary previews only after every line has been reviewed.
+9. If the draft exceeds one page, enters an interactive page-fit pass. It presents low-relevance or metadata lines one at a time and requires the user to keep, remove, or approve a shorter rewrite. The tool never deletes or rewrites a line automatically.
+10. Validates the completed proposal against verified root facts, historical titles, and the one-substantive-bullet minimum for every work position.
+11. Runs a Codex fact-audit comparing every proposed claim with the root source and explicit user confirmations.
+12. Shows a final diff and requires confirmation before writing the tailored folder.
+13. Builds and verifies exactly one A4 page, extractable text, and hyperlinks.
+14. Renders the final PDF and asks the same read-only Codex thread to reject clipping, overlap, broken glyphs, awkward page breaks, or orphaned headings.
+
+The `--yes` shortcut is intentionally unsupported in Tailor mode because it would bypass the required line decisions.
 
 ## Review mode
 
@@ -63,12 +67,18 @@ The user selects the root source or an existing tailored version and may optiona
 
 For root review, `/accept` appends the proposal beside the existing bullet. It never replaces the original. For tailored review, `/accept` replaces the current tailored bullet. `/source` additionally queues the accepted wording for append-only insertion into the matching root entry.
 
-## One-page requirement
+## Page and content requirements
 
-- Every tailored PDF must be exactly one A4 page.
+- Every generated tailored PDF must be exactly one A4 page.
+- Every verified work position must remain present.
+- Each position must retain at least one substantive bullet; technology/tool bullets do not count toward this minimum.
+- Additional bullets should be allocated to the positions most relevant to the job description.
+- Repeated technology lists should be consolidated into the skills section before substantive experience is removed.
+- Projects may be selected and condensed after every work position is represented.
 - The root source-of-truth PDF may contain multiple pages.
-- Page fitting should prefer content selection and concise writing over font-size or margin changes.
-- If automatic fitting cannot produce a valid one-page PDF, the tool must report the failure instead of claiming success.
+- Page fitting should prefer concise writing and removal of repetition over illegibly small text or extreme margins.
+- Page fitting must never remove or rewrite content automatically.
+- If the user's accepted fitting decisions cannot produce a valid one-page PDF without violating the content floor, the tool must report the failure instead of claiming success.
 
 ## Sessions
 

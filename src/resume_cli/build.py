@@ -12,6 +12,10 @@ class BuildError(RuntimeError):
     pass
 
 
+class PdfRenderError(BuildError):
+    """Raised when PDF pages cannot be rendered for visual QA."""
+
+
 @dataclass(slots=True)
 class PdfReport:
     path: Path
@@ -68,15 +72,39 @@ def build_resume(repo_root: Path, target: str) -> BuildResult:
 
 def render_pdf(path: Path, output_dir: Path) -> list[Path]:
     executable = shutil.which("pdftoppm")
-    if executable is None:
-        return []
     output_dir.mkdir(parents=True, exist_ok=True)
-    prefix = output_dir / "page"
-    process = subprocess.run(
-        [executable, "-png", "-r", "140", str(path), str(prefix)],
-        text=True,
-        capture_output=True,
-    )
-    if process.returncode:
-        raise BuildError(process.stderr.strip() or "Failed to render PDF pages")
-    return sorted(output_dir.glob("page-*.png"))
+    if executable is not None:
+        prefix = output_dir / "page"
+        process = subprocess.run(
+            [executable, "-png", "-r", "140", str(path), str(prefix)],
+            text=True,
+            capture_output=True,
+        )
+        if process.returncode:
+            raise PdfRenderError(process.stderr.strip() or "Poppler failed to render PDF pages")
+        images = sorted(output_dir.glob("page-*.png"))
+        if images:
+            return images
+
+    try:
+        import pymupdf
+    except ImportError as exc:
+        raise PdfRenderError(
+            "PDF page rendering is unavailable. Run `uv sync`, or install Poppler with `brew install poppler`."
+        ) from exc
+
+    try:
+        document = pymupdf.open(path)
+        scale = 140 / 72
+        matrix = pymupdf.Matrix(scale, scale)
+        images: list[Path] = []
+        for page_number, page in enumerate(document, start=1):
+            image_path = output_dir / f"page-{page_number}.png"
+            page.get_pixmap(matrix=matrix, alpha=False).save(image_path)
+            images.append(image_path)
+        document.close()
+    except Exception as exc:
+        raise PdfRenderError(f"PyMuPDF failed to render {path.name}: {exc}") from exc
+    if not images:
+        raise PdfRenderError(f"PDF renderer produced no page images for {path.name}")
+    return images

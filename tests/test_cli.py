@@ -7,7 +7,17 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from resume_cli.cli import _review_bullet_from_session, _snapshot, _undo, _unique_slug, app
+from resume_cli.build import BuildResult, PdfRenderError, PdfReport
+from resume_cli.cli import (
+    _build_tailored_until_one_page,
+    _fit_candidate_ids,
+    _normalize_batch_reviews,
+    _review_bullet_from_session,
+    _snapshot,
+    _undo,
+    _unique_slug,
+    app,
+)
 from resume_cli.resume import append_bullet, parse_resume
 from resume_cli.session import Session
 
@@ -25,6 +35,11 @@ class CliSmokeTests(unittest.TestCase):
         self.assertIn("tailor", result.stdout)
         self.assertIn("review", result.stdout)
         self.assertIn("resume", result.stdout)
+
+    def test_tailor_yes_cannot_bypass_line_review(self) -> None:
+        result = self.runner.invoke(app, ["tailor", "--yes", "--job-text", "Example job"])
+        self.assertNotEqual(0, result.exit_code)
+        self.assertIn("cannot skip the required line-by-line review", result.output)
 
     def test_status_checks_real_repository(self) -> None:
         result = self.runner.invoke(app, ["status"])
@@ -71,6 +86,64 @@ class CliSmokeTests(unittest.TestCase):
         self.assertEqual("before", session.working_tex)
         self.assertEqual([{"entry_title": "Shopee", "text": "existing"}], session.source_appends)
         self.assertEqual("before", session.payload["bullet_records"]["bullet"]["text"])
+
+    def test_pdf_renderer_failure_does_not_trigger_resume_rewrite(self) -> None:
+        session = Session.create(mode="tailor", target="example-role", job_description="job")
+        session.working_tex = "resume source"
+        report = PdfReport(
+            path=REPO_ROOT / "example-role" / "Morgan_Le_Resume.pdf",
+            pages=1,
+            a4=True,
+            extracted_characters=[100],
+            links=1,
+        )
+
+        class ChatThatMustNotRun:
+            def run_json(self, *args: object, **kwargs: object) -> object:
+                raise AssertionError("QA infrastructure errors must not trigger Codex revisions")
+
+        with (
+            patch("resume_cli.cli.build_resume", return_value=BuildResult(report=report, output="")),
+            patch("resume_cli.cli._visual_pdf_qa", side_effect=PdfRenderError("renderer unavailable")),
+        ):
+            with self.assertRaisesRegex(PdfRenderError, "renderer unavailable"):
+                _build_tailored_until_one_page(
+                    chat=ChatThatMustNotRun(),
+                    session=session,
+                    root_source="root source",
+                    target="example-role",
+                    confirm_revisions=False,
+                )
+
+    def test_batch_review_requires_every_line_in_source_order(self) -> None:
+        records = [{"id": "one"}, {"id": "two"}]
+        reviews = [{"line_id": "one"}, {"line_id": "two"}]
+        self.assertEqual(
+            {"one": reviews[0], "two": reviews[1]},
+            _normalize_batch_reviews({"reviews": reviews}, records),
+        )
+        with self.assertRaisesRegex(Exception, "source order"):
+            _normalize_batch_reviews({"reviews": list(reversed(reviews))}, records)
+
+    def test_page_fit_prioritizes_metadata_then_low_relevance(self) -> None:
+        session = Session.create(mode="tailor", target="", job_description="job")
+        session.payload = {
+            "line_ids": ["strong", "metadata", "weak"],
+            "line_records": {
+                "strong": {"is_metadata": False},
+                "metadata": {"is_metadata": True},
+                "weak": {"is_metadata": False},
+            },
+            "recommendations": {
+                "strong": {"relevance_score": 9},
+                "metadata": {"relevance_score": 8},
+                "weak": {"relevance_score": 2},
+            },
+            "decisions": {},
+            "fit_skipped": [],
+        }
+        self.assertEqual(["metadata", "weak", "strong"], _fit_candidate_ids(session))
+
 
 
 if __name__ == "__main__":

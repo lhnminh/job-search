@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from openai_codex import ApprovalMode, Codex, LocalImageInput, Sandbox, TextInput, Thread
+from openai_codex.api import ReasoningEffort
 
 
 BASE_INSTRUCTIONS = """Role: You are a conversational resume editor working inside this resume repository.
@@ -21,7 +22,7 @@ Constraints:
 - You may ask for a missing fact. Treat it as verified only after the user explicitly confirms it.
 - Preserve historical employer names and titles exactly.
 - Return LaTeX-ready text when a schema requests LaTeX.
-- Tailored resumes must fit one A4 page through selection and concise wording, not smaller fonts or margins.
+- Tailored resumes must fit exactly one A4 page. Preserve every verified work position with at least one substantive bullet, prioritize additional bullets for the most relevant roles, and compress repetition before removing a role.
 
 Collaboration: Be direct and specific. Explain the evidence behind recommendations. Accept natural-language revision instructions.
 
@@ -73,6 +74,7 @@ class CodexConversation:
             prompt,
             sandbox=Sandbox.read_only,
             approval_mode=ApprovalMode.deny_all,
+            effort=ReasoningEffort.low,
         )
         if result.error:
             raise CodexBackendError(str(result.error))
@@ -99,6 +101,7 @@ class CodexConversation:
             prompt,
             sandbox=Sandbox.read_only,
             approval_mode=ApprovalMode.deny_all,
+            effort=ReasoningEffort.low,
             output_schema=schema,
         )
         if result.error:

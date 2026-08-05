@@ -5,6 +5,7 @@ description = "Codex-powered interactive resume tailoring and review CLI"
 requires-python = ">=3.12"
 dependencies = [
     "openai-codex>=0.144.4",
+    "pymupdf>=1.26.3",
     "pypdf>=6.14.2",
     "rich>=15.0.0",
     "typer>=0.27.1",

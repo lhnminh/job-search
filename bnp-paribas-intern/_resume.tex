@@ -1,0 +1,117 @@
+\documentclass[11pt,a4paper,sans]{moderncv}
+
+\moderncvstyle{classic}
+\moderncvcolor{black}
+\usepackage{multicol}
+\usepackage{fontawesome}
+\usepackage[scale=0.92]{geometry}
+
+\renewcommand{\labelitemi}{\textbullet}
+\renewcommand{\baselinestretch}{0.96}
+
+\newcommand*{\customcventry}[5][0.45em]{
+  \begin{tabular}{@{}l}
+    \fontsize{11.5}{11.5}{\bfseries #2}, {\itshape #3}
+  \end{tabular}
+  \hfill
+  \begin{tabular}{l@{}}
+    \fontsize{11.5}{11.5}{\itshape #4}
+  \end{tabular}
+  \ifx&#5&%
+  \else{
+    \par\addvspace{0.05em}
+    \begin{minipage}{\maincolumnwidth}%
+      #5%
+    \end{minipage}}
+  \fi%
+  \par\addvspace{#1}}
+
+\newcommand*{\customcawards}[4]{
+  \begin{tabular}{@{}l}
+    {#2}
+  \end{tabular}
+  \hfill
+  \begin{tabular}{l@{}}
+    \bfseries\itshape #3
+  \end{tabular}
+  \ifx&#4&%
+  \else{\\%
+    \begin{minipage}{\maincolumnwidth}%
+      #4%
+    \end{minipage}}
+  \fi%
+  \par\addvspace{#1}}
+
+\firstname{Morgan} % Your first name
+\familyname{Le} % Your last name
+\title{\href{https://lhnminh.github.io/}{lhnminh.github.io}}
+\mobile{(+84)93 658-5869}
+\email{morgan.hn.le@gmail.com}
+\github{https://github.com/lhnminh}{github.com/lhnminh}
+\linkedin{https://www.linkedin.com/in/morganhle/}{linkedin.com/in/morganhle}
+
+\begin{document}
+
+\makecvtitle
+\vspace{-1.3em}
+
+\section{Education}
+
+{\customcventry{Columbia University}{\itshape Master's in Data Science}{August 2026 - Dec 2027}
+{\begin{itemize}
+  \item {\bfseries GPA:} Incoming
+\end{itemize}}}
+
+{\customcventry{University of Rochester}{\itshape Bachelor in Information Systems \& Economics}{August 2019 - May 2023}
+{\small\textit{Minor in Computer Science} \hfill {\bfseries GPA:} 3.8/4.0; Coursework: Advanced Algorithms, Database System, Predictive Analysis, Econometrics}}
+
+\section{Relevant Experience}
+
+{\customcventry{\href{https://en.vnu.edu.vn/}{Vietnam National University}}{\itshape Research Assistant}{May 2026 - Present}
+{\begin{itemize}
+  \item Implemented and fine-tuned deep learning models in PyTorch, benchmarking performance on Vietnam-scale datasets against existing baselines.
+  \item Integrated a Geographical Random Forest model into the research pipeline and built Python workflows for geospatial feature engineering, training, and evaluation.
+\end{itemize}}}
+
+{\customcventry{\href{https://www.sea.com/products/shopee}{Shopee}}{\itshape Product Operations and Analytics Associate}{Jun 2025 - May 2026}
+{\begin{itemize}
+  \item Applied statistical analysis to seller performance, campaigns, and regional sales, informing strategies that contributed to over \$100K in revenue and 25\% YoY growth.
+  \item Engineered automated pipelines consolidating sales and P\&L data from multiple sources, reducing manual processing time by 20\%.
+\end{itemize}}}
+
+{\customcventry{\href{https://www.bcg.com/about/overview}{Boston Consulting Group (BCG)}}{\itshape Consultant}{Jan 2025 - Jun 2025}
+{\begin{itemize}
+  \item Translated client business problems into data-driven analyses supporting go-to-market strategy for a \$10B infrastructure initiative and executive decision-making.
+  \item Built pricing, market-sizing, and financial models to evaluate commercial opportunities and inform executive decisions.
+\end{itemize}}}
+
+{\customcventry{\href{https://www.onepeloton.com/company}{Peloton}}{\itshape Business Operations Analyst II}{Dec 2023 - Jun 2024}
+{\begin{itemize}
+  \item Led procurement initiatives that achieved \$800K in annual savings and identified \$2M in revenue opportunities; built dashboards surfacing \$10M in savings.
+\end{itemize}}}
+
+{\customcventry{\href{https://www.samsung.com/us/about-us/our-business/}{Samsung Electronics America}}{\itshape Supply Chain Data Ops Analyst}{May 2023 - Dec 2023}
+{\begin{itemize}
+  \item Managed procurement operations across 100+ global material supply chains and over \$1M in daily purchasing volume, automating tracking and reporting workflows to increase analyst productivity by 10\%.
+\end{itemize}}}
+
+\section{Selected Projects}
+
+{\customcventry{\href{https://github.com/lhnminh/axiom}{Axiom}}{AI-Powered Reading Tool}{July 2026}
+{\begin{itemize}
+  \item Built the agentic workflow for a macOS AI-powered PDF reading application using the OpenAI Agent SDK and Google ADK, enabling proactive concept highlighting and contextual explanations.
+  \item Collaborated with a teammate to design, develop, and present the application during OpenAI Build Week, a one-week hackathon.
+\end{itemize}}}
+
+{\customcventry{\href{https://github.com/lhnminh/Kaggle-Housing-Prices-Comp}{Housing Prices Competition}}{\href{https://www.kaggle.com/competitions/home-data-for-ml-course/overview}{Kaggle Competition}}{Rank 403/5425 (Top 8\%)}
+{\begin{itemize}
+  \item Built an end-to-end ML workflow and reusable preprocessing pipeline for cleaning, feature selection, training, and batch prediction.
+\end{itemize}}}
+
+\section{Technical Skills}
+{\small
+\textbf{Programming \& Data:} Python, SQL, C++, pandas, BigQuery, Google Apps Script, Excel \\
+\textbf{Machine Learning \& Engineering:} PyTorch, scikit-learn, XGBoost, MLflow, OpenAI Agent SDK, Google ADK, LLM APIs, Git, Docker
+}
+
+\end{document}

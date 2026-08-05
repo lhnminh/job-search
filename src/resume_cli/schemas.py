@@ -44,6 +44,36 @@ BULLET_REVIEW_SCHEMA: dict[str, Any] = {
     },
 }
 
+LINE_RECOMMENDATION_PROPERTIES: dict[str, Any] = {
+    "line_id": {"type": "string"},
+    "action": {"type": "string", "enum": ["keep", "rewrite", "remove", "ask"]},
+    "reason": {"type": "string"},
+    "relevance_score": {"type": "integer", "minimum": 1, "maximum": 10},
+    "suggested_text": {"type": "string"},
+    "question": {"type": "string"},
+    "uses_unverified_fact": {"type": "boolean"},
+}
+
+LINE_RECOMMENDATION_REQUIRED = list(LINE_RECOMMENDATION_PROPERTIES)
+
+LINE_REVIEW_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": LINE_RECOMMENDATION_REQUIRED,
+    "properties": LINE_RECOMMENDATION_PROPERTIES,
+}
+
+LINE_REVIEW_BATCH_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["suggested_slug", "summary", "reviews"],
+    "properties": {
+        "suggested_slug": {"type": "string"},
+        "summary": STRING_ARRAY,
+        "reviews": {"type": "array", "items": LINE_REVIEW_SCHEMA},
+    },
+}
+
 SECTION_ACTION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,

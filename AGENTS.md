@@ -31,6 +31,10 @@ The Codex-powered resume CLI follows a stricter append-only policy for the root 
 - Tailored versions may replace or remove their own content without changing the root source.
 - A tailored proposal is appended to the root only after the user explicitly selects `/source`.
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the CLI may treat it as verified.
+- Tailor mode must begin from a complete copy of root `_resume.tex`, batch its initial Codex analysis, and then require an explicit decision for every content bullet except the contact header.
+- Employer, historical title, and date lines are locked context in the interactive session.
+- Tailor mode must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit line-level user decision.
+- Session state must be saved after each line decision so an interrupted tailoring session resumes in place.
 
 These CLI-specific rules take precedence over the default manual merge semantics below whenever the interactive tool is applying a change.
 
@@ -72,7 +76,8 @@ Tailored versions are selective snapshots. They do not replace the reference and
 - A targeted headline or section title may be adjusted when useful, as long as it is clearly positioning rather than a claimed past role.
 - Prefer evidence from the reference that directly matches the job description.
 - Flag material eligibility mismatches to the user, but do not alter truthful education or employment facts to hide them.
-- A tailored version may be one page when appropriate, but only the tailored version should be optimized for submission length.
+- Every tailored version must be exactly one A4 page. This is a hard submission rule, not a per-job preference.
+- Preserve every verified work position with at least one substantive bullet. Allocate additional bullets to the roles most relevant to the job description, and consolidate repeated technology lists before removing a position.
 - Resume variants created by the interactive CLI must be exactly one A4 page.
 
 ## Projects Are Additive
@@ -119,7 +124,7 @@ After every resume build:
 6. Confirm hyperlinks remain present.
 7. Remove temporary QA files before completing the task.
 
-For the root source of truth, multiple pages are acceptable. Use clean page boundaries rather than deleting content. For tailored versions, optimize page count only when appropriate to the application or explicitly requested.
+For the root source of truth, multiple pages are acceptable. Use clean page boundaries rather than deleting content. Every tailored version must remain exactly one A4 page.
 
 ## Editing Workflow
 
