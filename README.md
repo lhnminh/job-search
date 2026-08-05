@@ -69,3 +69,58 @@ uv run python --version
 ```
 
 Add a project dependency with `uv add <package>`. Commit both `pyproject.toml` and `uv.lock` whenever dependencies change.
+
+## Interactive Codex CLI
+
+The repository includes a local Codex-powered terminal tool for creating and reviewing resume variants. It uses the Codex authentication already configured on the machine; personal interactive use does not require a separate API key.
+
+Start the mode-selection menu:
+
+```bash
+uv run resume
+```
+
+The CLI checks the existing local Codex login before starting. Confirm it manually with:
+
+```bash
+codex login status
+```
+
+When pasting a job description, finish the paste with a line containing only `.done`.
+
+Create a one-page tailored resume from a pasted job description:
+
+```bash
+uv run resume tailor
+```
+
+Review a resume bullet by bullet and section by section:
+
+```bash
+uv run resume review
+uv run resume review "finance-consulting"
+```
+
+Resume the latest unfinished conversation:
+
+```bash
+uv run resume resume
+```
+
+Check authentication, source parsing, available versions, and unfinished sessions:
+
+```bash
+uv run resume status
+```
+
+The root source is append-only when changed through the CLI. Tailored versions can be rewritten, but accepted content reaches the root only through an explicit `/source` action. Every tailored version created by the CLI must compile to exactly one A4 page. See `SPEC.md` for the complete behavior contract.
+
+During guided review, ordinary text is sent to Codex as a revision instruction. The available shortcuts are `/accept`, `/keep`, `/regenerate`, `/source`, `/skip`, `/back`, `/undo`, and `/done`. The tool also pauses after each section for a section-level review.
+
+Every successful build is checked for A4 size, page count, extractable text, and hyperlinks. The PDF is then rendered page by page for Codex visual inspection. Temporary page images are deleted automatically.
+
+Run the test suite:
+
+```bash
+uv run python -m unittest discover -v
+```

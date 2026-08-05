@@ -22,6 +22,18 @@ The repository root `_resume.tex` is the canonical content library and source of
 - Preserve unrelated reference content whenever adding or updating material.
 - Build new tailored versions from the latest root `_resume.tex` unless the user explicitly names another starting point.
 
+### Interactive CLI source rules
+
+The Codex-powered resume CLI follows a stricter append-only policy for the root source of truth:
+
+- Automated CLI operations may append accepted bullets, projects, or facts to root `_resume.tex`.
+- The CLI must never replace or delete existing root content.
+- Tailored versions may replace or remove their own content without changing the root source.
+- A tailored proposal is appended to the root only after the user explicitly selects `/source`.
+- A new metric, responsibility, technology, or outcome requires explicit user confirmation before the CLI may treat it as verified.
+
+These CLI-specific rules take precedence over the default manual merge semantics below whenever the interactive tool is applying a change.
+
 ### Default merge semantics
 
 When the user supplies new content for the general reference, apply these defaults unless the user explicitly says otherwise:
@@ -61,6 +73,7 @@ Tailored versions are selective snapshots. They do not replace the reference and
 - Prefer evidence from the reference that directly matches the job description.
 - Flag material eligibility mismatches to the user, but do not alter truthful education or employment facts to hide them.
 - A tailored version may be one page when appropriate, but only the tailored version should be optimized for submission length.
+- Resume variants created by the interactive CLI must be exactly one A4 page.
 
 ## Projects Are Additive
 
@@ -129,3 +142,5 @@ Follow this sequence and explain changes step by step:
 - Do not stage unrelated worktree changes.
 - Keep `.venv/`, caches, LaTeX intermediates, and temporary renders untracked.
 - The project uses uv with Python 3.12. Keep `pyproject.toml`, `.python-version`, and `uv.lock` tracked when Python tooling is used.
+- Interactive CLI sessions belong under the gitignored `.resume/sessions/` directory.
+- Use `uv run resume` for the Codex-powered terminal tool and `uv run python -m unittest discover -v` for its test suite.
