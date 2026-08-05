@@ -70,9 +70,34 @@ uv run python --version
 
 Add a project dependency with `uv add <package>`. Commit both `pyproject.toml` and `uv.lock` whenever dependencies change.
 
-## Interactive Codex CLI
+## Conversational Codex skill
 
-The repository includes a local Codex-powered terminal tool for creating and reviewing resume variants. It uses the Codex authentication already configured on the machine; personal interactive use does not require a separate API key.
+The primary tailoring workflow is the repo-specific `tailor-resume` skill. It runs directly in your current Codex conversation, so there is no nested chat interface and no separate API key.
+
+Start a new Codex task in this repository and say:
+
+```text
+Use $tailor-resume to tailor my resume for this job description:
+
+<paste job description>
+```
+
+The skill reviews Education, Relevant Experience, Projects, and other sections in order. Within each section it shows one complete school, job, or project with all bullets numbered. You can respond naturally:
+
+```text
+Rewrite line 2 with more finance emphasis.
+Keep 1 and 3.
+Remove the technologies line.
+Show me the whole experience section again.
+```
+
+Every bullet requires an explicit decision. Codex records decisions in a temporary gitignored session ledger, creates or updates the tailored folder only after review, and never changes the source of truth unless you explicitly request an append. Page fitting is also conversational: nothing is removed or shortened automatically.
+
+After building, the skill runs a deterministic source/PDF validator and performs visual QA. Tailored folders still contain only `_resume.tex` and `Morgan_Le_Resume.pdf`.
+
+## Legacy interactive CLI
+
+The Python terminal application remains available as a fallback while the skill-first workflow is validated. It uses the Codex authentication already configured on the machine.
 
 Start the mode-selection menu:
 
@@ -88,17 +113,17 @@ codex login status
 
 When pasting a job description, finish the paste with a line containing only `.done`.
 
-Create a one-page tailored resume through an interactive line-by-line session:
+Create a one-page tailored resume through an interactive entry-by-entry session:
 
 ```bash
 uv run resume tailor
 ```
 
-Tailor mode starts with the complete root resume. Codex analyzes all content lines in one batch for speed, then the CLI presents every education, experience, project, and technology/tool bullet individually. Contact details are skipped and employer/title/date headers are locked. No line is changed until you explicitly accept a recommendation, keep it, remove it, or request another version.
+Tailor mode starts with the complete root resume. Codex analyzes all content lines in one batch for speed, then the CLI presents one complete education item, job, or project at a time. All bullets are numbered and remain visible together, while contact details are skipped and employer/title/date headers are locked.
 
-After every line has a saved decision, the CLI builds a temporary preview. If it is longer than one page, the CLI asks you to shorten, remove, or keep individual lines until it fits. It does not automatically cut positions or bullets. Sessions are saved after each decision and can be continued with `uv run resume resume`.
+You can target a particular bullet while retaining the complete entry as context—for example, `/rework 2 emphasize the financial model`. Use `/accept 2`, `/keep 2`, or `/remove 2` to decide individual bullets; `/accept-all` and `/keep-all` handle the undecided bullets in the visible entry. `/next` is available only after every bullet in that entry has a saved decision. `/back`, `/undo`, and `/quit` handle navigation and resumability.
 
-Tailor-mode commands are `/accept`, `/keep`, `/remove`, `/regenerate`, `/back`, `/undo`, and `/quit`; ordinary text asks Codex to reconsider the current line using that instruction. The non-interactive `--yes` option is disabled because every line must be reviewed.
+After every entry has been reviewed, the CLI builds a temporary preview. If it is longer than one page, the CLI asks you to shorten, remove, or keep individual lines until it fits. It does not automatically cut positions or bullets. Sessions are saved after each decision and can be continued with `uv run resume resume`. The non-interactive `--yes` option is disabled because it would bypass the entry review.
 
 Review a resume bullet by bullet and section by section:
 

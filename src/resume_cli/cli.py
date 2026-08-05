@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -565,6 +566,81 @@ def _show_interactive_line(
     )
 
 
+def _show_entry_review(
+    session: Session,
+    entry: dict[str, Any],
+    recommendations: dict[str, dict[str, Any]],
+    position: int,
+    total: int,
+) -> None:
+    decisions = session.payload.get("decisions", {})
+    parts = [
+        f"[bold]{entry['title']}[/bold] · {entry['subtitle']} · {entry['date']}",
+        "[dim]Employer/title/date are locked. Target a bullet by its displayed number.[/dim]",
+    ]
+    for number, line_id in enumerate(entry["line_ids"], start=1):
+        proposal = recommendations[line_id]
+        decision = decisions.get(line_id)
+        status = f"saved: {decision['action']}" if decision else "not decided"
+        line = [
+            f"[bold cyan]{number}.[/bold cyan] {tex_to_text(_current_line_text(session, line_id))}",
+            f"[dim]Codex: {proposal['action']} · relevance {proposal['relevance_score']}/10 · {proposal['reason']}[/dim]",
+        ]
+        if proposal.get("suggested_text") and proposal["action"] == "rewrite":
+            line.append(f"[green]Suggested:[/green] {tex_to_text(proposal['suggested_text'])}")
+        if proposal.get("question"):
+            line.append(f"[yellow]Question:[/yellow] {proposal['question']}")
+        line.append(f"[magenta]{status}[/magenta]")
+        parts.append("\n".join(line))
+    decided = sum(line_id in decisions for line_id in entry["line_ids"])
+    parts.append(f"[bold]Progress:[/bold] {decided}/{len(entry['line_ids'])} bullets decided")
+    console.print(
+        Panel(
+            "\n\n".join(parts),
+            title=f"{entry['section']} · entry {position}/{total}",
+        )
+    )
+
+
+def _parse_entry_command(answer: str) -> tuple[str, int | None, str]:
+    value = answer.strip()
+    normalized = value.lstrip("/").strip()
+    simple = normalized.casefold().replace(" ", "-")
+    if simple == "q":
+        return "quit", None, ""
+    if simple in {
+        "next",
+        "back",
+        "undo",
+        "quit",
+        "keep-all",
+        "accept-all",
+    }:
+        return simple, None, ""
+
+    patterns = (
+        r"(?i)^(accept|keep|remove|regenerate|rework|rewrite|revise)\s+(?:(?:line|bullet)\s+)?(\d+)\s*:?[ \t]*(.*)$",
+        r"(?i)^(?:(?:line|bullet)\s+)?(\d+)\s+(accept|keep|remove|regenerate|rework|rewrite|revise)\s*:?[ \t]*(.*)$",
+    )
+    for pattern_index, pattern in enumerate(patterns):
+        match = re.match(pattern, normalized)
+        if not match:
+            continue
+        if pattern_index == 0:
+            action, number, instruction = match.groups()
+        else:
+            number, action, instruction = match.groups()
+        normalized_action = action.casefold()
+        if normalized_action in {"rewrite", "revise"}:
+            normalized_action = "rework"
+        return normalized_action, int(number), instruction.strip()
+
+    pointed = re.match(r"(?i)^(?:line\s+)?(\d+)\s*:\s*(.+)$", normalized)
+    if pointed:
+        return "rework", int(pointed.group(1)), pointed.group(2).strip()
+    return "unknown", None, value
+
+
 def _interactive_snapshot(session: Session) -> None:
     session.history.append(
         json.dumps(
@@ -657,12 +733,13 @@ def _initialize_interactive_tailor(
     session.working_tex = base_tex
     session.history = []
     session.payload = {
-        "workflow_version": 2,
+        "workflow_version": 3,
         "phase": "recommendations",
         "requested_slug": requested_slug or previous_target or "",
         "base_tex": base_tex,
         "line_ids": [record["id"] for record in records],
         "line_records": {record["id"]: record for record in records},
+        "entry_groups": _entry_groups(base_tex),
         "decisions": {},
         "recommendations": {},
         "confirmed_facts": [],
@@ -670,89 +747,176 @@ def _initialize_interactive_tailor(
     }
 
 
-def _review_tailored_lines(
+def _upgrade_line_session_to_entries(session: Session) -> None:
+    groups = _entry_groups(session.payload["base_tex"])
+    current_line_id = None
+    line_ids = session.payload.get("line_ids", [])
+    if session.cursor < len(line_ids):
+        current_line_id = line_ids[session.cursor]
+    session.cursor = next(
+        (
+            index
+            for index, group in enumerate(groups)
+            if current_line_id in group["line_ids"]
+        ),
+        0,
+    )
+    session.payload["entry_groups"] = groups
+    session.payload["workflow_version"] = 3
+    if session.payload.get("phase") == "line_review":
+        session.payload["phase"] = "entry_review"
+
+
+def _accept_entry_recommendation(
+    chat: CodexConversation,
+    session: Session,
+    root_source: str,
+    record: dict[str, Any],
+    proposal: dict[str, Any],
+) -> tuple[list[str], bool]:
+    line_id = record["id"]
+    if proposal["action"] == "ask" or proposal["uses_unverified_fact"]:
+        question = proposal.get("question") or "What verified fact supports this change?"
+        fact = console.input(f"[yellow]{question}[/yellow]\nYou: ").strip()
+        if not fact:
+            return ["No decision was saved without factual confirmation"], False
+        _record_confirmed_fact(session, fact)
+        session.payload["recommendations"][line_id] = _request_single_line_review(
+            chat,
+            session,
+            record,
+            f"The user explicitly confirmed this fact: {fact}",
+        )
+        return [], False
+    if proposal["action"] == "rewrite":
+        errors = _apply_interactive_decision(
+            session, root_source, line_id, "rewrite", proposal["suggested_text"]
+        )
+    elif proposal["action"] == "remove":
+        errors = _apply_interactive_decision(session, root_source, line_id, "remove")
+    else:
+        errors = _apply_interactive_decision(session, root_source, line_id, "keep")
+    return errors, not errors
+
+
+def _review_tailored_entries(
     chat: CodexConversation, session: Session, root_source: str
 ) -> bool:
     store = SessionStore(REPO_ROOT)
-    line_ids: list[str] = session.payload["line_ids"]
+    entries: list[dict[str, Any]] = session.payload["entry_groups"]
     records: dict[str, dict[str, Any]] = session.payload["line_records"]
     recommendations: dict[str, dict[str, Any]] = session.payload["recommendations"]
-    while session.cursor < len(line_ids):
-        line_id = line_ids[session.cursor]
-        record = records[line_id]
-        proposal = recommendations[line_id]
-        _show_interactive_line(session, record, proposal, session.cursor + 1, len(line_ids))
+    while session.cursor < len(entries):
+        entry = entries[session.cursor]
+        line_ids: list[str] = entry["line_ids"]
+        _show_entry_review(
+            session, entry, recommendations, session.cursor + 1, len(entries)
+        )
         answer = console.input(
-            "[bold]You[/bold] ([cyan]/accept /keep /remove /regenerate /back /undo /quit[/cyan], or instruction): "
+            "[bold]You[/bold] ([cyan]/accept 2 /keep 1 /remove 3 /rework 2 <instruction> "
+            "/keep-all /accept-all /next /back /undo /quit[/cyan]): "
         ).strip()
-        command = answer.casefold()
-        if command in {"/quit", "quit", "q"}:
+        action, number, instruction = _parse_entry_command(answer)
+        if action == "quit":
             store.save(session)
             console.print(f"Session saved as [bold]{session.id}[/bold].")
             return False
-        if command in {"/undo", "undo"}:
+        if action == "undo":
             console.print("Undid the latest decision." if _interactive_undo(session) else "[dim]Nothing to undo.[/dim]")
             store.save(session)
             continue
-        if command in {"/back", "back"}:
+        if action == "back":
             session.cursor = max(0, session.cursor - 1)
             store.save(session)
             continue
-        if command in {"/regenerate", "regenerate"}:
-            proposal = _request_single_line_review(
-                chat,
-                session,
-                record,
-                "Give a materially different recommendation while preserving verified facts.",
-            )
-            recommendations[line_id] = proposal
-            store.save(session)
-            continue
-        if command in {"/keep", "keep"}:
-            errors = _apply_interactive_decision(session, root_source, line_id, "keep")
-        elif command in {"/remove", "remove"}:
-            errors = _apply_interactive_decision(session, root_source, line_id, "remove")
-        elif command in {"/accept", "accept"}:
-            if proposal["action"] == "ask" or proposal["uses_unverified_fact"]:
-                question = proposal.get("question") or "What verified fact supports this change?"
-                fact = console.input(f"[yellow]{question}[/yellow]\nYou: ").strip()
-                if not fact:
-                    console.print("[yellow]No decision was saved without factual confirmation.[/yellow]")
-                    continue
-                _record_confirmed_fact(session, fact)
-                recommendations[line_id] = _request_single_line_review(
-                    chat,
-                    session,
-                    record,
-                    f"The user explicitly confirmed this fact: {fact}",
+        if action == "next":
+            undecided = [
+                index
+                for index, line_id in enumerate(line_ids, start=1)
+                if line_id not in session.payload["decisions"]
+            ]
+            if undecided:
+                console.print(
+                    "[yellow]Decide every bullet before continuing. Remaining: "
+                    + ", ".join(str(index) for index in undecided)
+                    + "[/yellow]"
                 )
-                store.save(session)
                 continue
-            action = proposal["action"]
-            if action == "rewrite":
-                errors = _apply_interactive_decision(
-                    session, root_source, line_id, "rewrite", proposal["suggested_text"]
-                )
-            elif action == "remove":
-                errors = _apply_interactive_decision(session, root_source, line_id, "remove")
-            else:
-                errors = _apply_interactive_decision(session, root_source, line_id, "keep")
-        elif answer:
-            recommendations[line_id] = _request_single_line_review(
-                chat, session, record, answer
-            )
+            session.cursor += 1
             store.save(session)
             continue
+        if action in {"keep-all", "accept-all"}:
+            failed: list[str] = []
+            for index, line_id in enumerate(line_ids, start=1):
+                if line_id in session.payload["decisions"]:
+                    continue
+                if action == "keep-all":
+                    errors = _apply_interactive_decision(
+                        session, root_source, line_id, "keep"
+                    )
+                    saved = not errors
+                else:
+                    errors, saved = _accept_entry_recommendation(
+                        chat,
+                        session,
+                        root_source,
+                        records[line_id],
+                        recommendations[line_id],
+                    )
+                if errors or not saved:
+                    failed.append(str(index))
+            if failed:
+                console.print(
+                    "[yellow]These bullets still need attention: "
+                    + ", ".join(failed)
+                    + "[/yellow]"
+                )
+            store.save(session)
+            continue
+
+        if number is None or number < 1 or number > len(line_ids):
+            console.print(
+                f"[yellow]Point to a bullet number from 1 to {len(line_ids)}. "
+                "Example: /rework 2 emphasize the financial model[/yellow]"
+            )
+            continue
+
+        line_id = line_ids[number - 1]
+        record = records[line_id]
+        proposal = recommendations[line_id]
+        saved = False
+        if action == "keep":
+            errors = _apply_interactive_decision(session, root_source, line_id, "keep")
+            saved = not errors
+        elif action == "remove":
+            errors = _apply_interactive_decision(session, root_source, line_id, "remove")
+            saved = not errors
+        elif action == "accept":
+            errors, saved = _accept_entry_recommendation(
+                chat, session, root_source, record, proposal
+            )
+        elif action in {"regenerate", "rework"}:
+            rework_instruction = instruction or (
+                "Give a materially different recommendation while preserving verified facts."
+                if action == "regenerate"
+                else "Improve this bullet for the target job while preserving verified facts."
+            )
+            recommendations[line_id] = _request_single_line_review(
+                chat, session, record, rework_instruction
+            )
+            errors = []
         else:
-            console.print("[dim]Choose a command so this line receives an explicit decision.[/dim]")
+            console.print(
+                "[yellow]Unknown command. Example: /rework 2 emphasize the financial model[/yellow]"
+            )
             continue
 
         if errors:
             console.print("[red]That decision would violate the resume rules:[/red]")
             for error in errors:
                 console.print(f"  • {error}")
-            continue
-        session.cursor += 1
+        elif saved:
+            console.print(f"[green]Saved bullet {number}.[/green]")
         store.save(session)
     session.payload["phase"] = "page_fit"
     store.save(session)
@@ -951,11 +1115,14 @@ def _finalize_interactive_tailor(
 def _run_tailor_session(session: Session, *, requested_slug: str | None = None, assume_yes: bool = False) -> None:
     if assume_yes:
         raise typer.BadParameter(
-            "--yes is unavailable in interactive tailoring because every line requires a user decision"
+            "--yes is unavailable because every resume entry requires user review"
         )
     store = SessionStore(REPO_ROOT)
     root_source = (REPO_ROOT / "_resume.tex").read_text(encoding="utf-8")
-    if session.payload.get("workflow_version") != 2:
+    if session.payload.get("workflow_version") == 2:
+        _upgrade_line_session_to_entries(session)
+        store.save(session)
+    elif session.payload.get("workflow_version") != 3:
         _initialize_interactive_tailor(session, root_source, requested_slug)
         store.save(session)
     elif requested_slug and not session.payload.get("requested_slug"):
@@ -978,7 +1145,7 @@ def _run_tailor_session(session: Session, *, requested_slug: str | None = None, 
             session.payload["recommendations"] = _normalize_batch_reviews(batch, records)
             session.payload["suggested_slug"] = batch["suggested_slug"]
             session.payload["summary"] = batch["summary"]
-            session.payload["phase"] = "line_review"
+            session.payload["phase"] = "entry_review"
             store.save(session)
             _show_tailor_proposal(
                 {
@@ -988,8 +1155,8 @@ def _run_tailor_session(session: Session, *, requested_slug: str | None = None, 
                 }
             )
 
-        if session.payload["phase"] == "line_review":
-            if not _review_tailored_lines(chat, session, root_source):
+        if session.payload["phase"] == "entry_review":
+            if not _review_tailored_entries(chat, session, root_source):
                 return
 
         if not session.target:
@@ -1016,11 +1183,11 @@ def _run_tailor_session(session: Session, *, requested_slug: str | None = None, 
 def tailor(
     job_text: str | None = typer.Option(None, "--job-text", help="Job description text; otherwise paste interactively."),
     slug: str | None = typer.Option(None, help="Preferred output folder slug."),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Unsupported: tailoring requires a decision for every line."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Unsupported: tailoring requires review of every entry."),
 ) -> None:
-    """Build a one-page tailored resume through a line-by-line session."""
+    """Build a one-page tailored resume through an entry-by-entry session."""
     if yes:
-        raise typer.BadParameter("--yes cannot skip the required line-by-line review")
+        raise typer.BadParameter("--yes cannot skip the required entry-by-entry review")
     _require_authentication()
     description = job_text.strip() if job_text else _read_multiline("Paste the job description:")
     session = Session.create(mode="tailor", target="", job_description=description)

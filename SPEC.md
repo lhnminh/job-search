@@ -1,19 +1,21 @@
-# Interactive Resume CLI Specification
+# Conversational Resume Skill Specification
 
 ## Goal
 
-Provide a local terminal tool that feels like a focused Codex chat for creating and reviewing resume variants from this repository.
+Provide a repo-specific Codex skill that creates and reviews resume variants directly in the active Codex conversation. Do not recreate Codex chat through a nested Python application.
 
-The tool has two modes:
+The workflow supports two intents:
 
 1. **Tailor:** Create a polished one-page application-specific resume from a pasted job description.
-2. **Review:** Walk through a resume section by section and bullet by bullet with conversational Codex feedback.
+2. **Review:** Walk through a resume section by section, entry by entry, and bullet by bullet with conversational Codex feedback.
+
+The repo-specific skill lives at `.agents/skills/tailor-resume/`. The existing Python CLI remains a temporary fallback during migration, not the primary interaction layer.
 
 ## Canonical content
 
 - The repository root `_resume.tex` remains the comprehensive source of truth.
-- Automated CLI operations may only append accepted content to the root source.
-- The CLI must never replace or delete an existing root bullet, entry, project, section, or verified fact.
+- Automated interactive operations may only append explicitly accepted content to the root source.
+- The skill and fallback CLI must never replace or delete an existing root bullet, entry, project, section, or verified fact.
 - Tailored versions may select, reorder, condense, replace, or remove content without changing the root source.
 - An accepted tailored bullet reaches the root source only through an explicit `/source` action.
 
@@ -25,47 +27,40 @@ The tool has two modes:
 - Codex must not independently invent employers, titles, dates, responsibilities, technologies, metrics, or outcomes.
 - Historical company names and job titles must remain unchanged.
 
-## Tailor mode
+## Tailor workflow
 
-The user pastes a job description as terminal text. The tool then:
+The user invokes `$tailor-resume` and pastes a job description in the Codex conversation. The skill then:
 
-1. Starts a repository-aware Codex thread in a read-only sandbox.
-2. Creates a compact working copy of the complete root resume without changing its content facts, contact header, employer names, historical titles, or dates.
-3. Sends all content lines to Codex in one batch so the initial analysis does not require one model request per line.
-4. Walks through every education, experience, project, and technology/tool bullet individually. The contact header is excluded, while entry headers are shown as locked context.
-5. Requires an explicit decision for every line: accept the displayed recommendation, keep, remove, regenerate, go back, undo, quit, or provide a natural-language instruction.
-6. Saves every decision immediately so the session can resume at the same line.
-7. Suggests a descriptive folder slug and requires confirmation before creating or overwriting a folder.
-8. Builds temporary previews only after every line has been reviewed.
-9. If the draft exceeds one page, enters an interactive page-fit pass. It presents low-relevance or metadata lines one at a time and requires the user to keep, remove, or approve a shorter rewrite. The tool never deletes or rewrites a line automatically.
-10. Validates the completed proposal against verified root facts, historical titles, and the one-substantive-bullet minimum for every work position.
-11. Runs a Codex fact-audit comparing every proposed claim with the root source and explicit user confirmations.
-12. Shows a final diff and requires confirmation before writing the tailored folder.
-13. Builds and verifies exactly one A4 page, extractable text, and hyperlinks.
-14. Renders the final PDF and asks the same read-only Codex thread to reject clipping, overlap, broken glyphs, awkward page breaks, or orphaned headings.
+1. Uses the active repository-aware Codex conversation; it does not start a nested Codex thread.
+2. Reads the complete root resume and job description without changing the source.
+3. Creates a gitignored decision ledger for resumability.
+4. Walks through the resume section by section and entry by entry: each education item, job, and project is shown with all of its numbered bullets and Codex recommendations together. The contact header is excluded, while entry headers are locked context.
+5. Lets the user point to a specific bullet within the visible entry using natural language, such as “rewrite line 2 with more finance emphasis,” without losing the surrounding job context.
+6. Requires an explicit decision for every bullet before moving to the next entry. The user may accept, keep, remove, regenerate, rework, accept all, keep all, go back, undo, or quit.
+7. Saves every decision immediately so the session can resume at the same entry.
+8. Suggests a descriptive folder slug and requires confirmation before creating or overwriting a folder.
+9. Builds temporary previews only after every entry has been reviewed.
+10. If the draft exceeds one page, enters an interactive page-fit pass. It presents low-relevance or metadata lines one at a time and requires the user to keep, remove, or approve a shorter rewrite. The tool never deletes or rewrites a line automatically.
+11. Runs the deterministic validator against verified root facts, historical titles, PDF structure, and the one-substantive-bullet minimum for every work position.
+12. Audits every proposed claim against the root source and explicit user confirmations.
+13. Shows a final diff and requires confirmation before writing the tailored folder.
+14. Builds and verifies exactly one A4 page, extractable text, and hyperlinks.
+15. Renders the final PDF and visually rejects clipping, overlap, broken glyphs, awkward page breaks, or orphaned headings.
 
-The `--yes` shortcut is intentionally unsupported in Tailor mode because it would bypass the required line decisions.
+There is no non-interactive acceptance shortcut because it would bypass the required entry review and bullet decisions.
 
-## Review mode
+## Review workflow
 
 The user selects the root source or an existing tailored version and may optionally paste a job description. The tool then:
 
 1. Parses sections, entries, and bullets from `_resume.tex`.
-2. Presents one bullet at a time with Codex's assessment and suggested wording.
-3. Accepts natural-language instructions as well as shortcuts:
-   - `/accept` - accept the current proposal.
-   - `/keep` - keep the original bullet.
-   - `/regenerate` - request a different proposal.
-   - `/source` - accept the proposal and append it to the root source.
-   - `/skip` - move on without a change.
-   - `/back` - revisit the previous bullet.
-   - `/undo` - undo the most recent accepted edit.
-   - `/done` - finish the review.
-4. Performs a section-level assessment after the bullets in each section.
+2. Presents one complete entry at a time with numbered bullets, assessments, and suggested wording.
+3. Accepts natural-language instructions targeting one or several numbered bullets, plus requests to keep all, accept all, go back, undo, or revisit a section.
+4. Requires an explicit decision for every bullet and summarizes each section before moving on.
 5. Shows a final diff and requests confirmation before saving.
 6. Builds and verifies the selected resume after saving.
 
-For root review, `/accept` appends the proposal beside the existing bullet. It never replaces the original. For tailored review, `/accept` replaces the current tailored bullet. `/source` additionally queues the accepted wording for append-only insertion into the matching root entry.
+For root review, accepting revised wording appends it beside the existing bullet; it never replaces the original. For tailored review, acceptance replaces only the selected tailored bullet. Root insertion always requires an explicit source-of-truth request.
 
 ## Page and content requirements
 
@@ -83,35 +78,30 @@ For root review, `/accept` appends the proposal beside the existing bullet. It n
 ## Sessions
 
 - Interactive state is stored under `.resume/sessions/`, which is gitignored.
-- A session records its Codex thread ID, mode, target, job description, current bullet, accepted decisions, working LaTeX, and undo history.
-- `resume resume` continues the most recently updated unfinished session.
-- Completed sessions are marked complete and may be cleaned up later.
+- A skill session ledger records the target, root hash, job description, current section and entry, accepted bullet decisions, and confirmed facts.
+- The active Codex task and ledger provide conversational continuity.
+- Completed skill ledgers are removed after successful verification unless the user requests retention.
 
 ## Authentication and model selection
 
-- The tool uses the local Python Codex SDK and the user's configured Codex authentication.
-- Local ChatGPT sign-in is supported; an OpenAI API key is not required for personal interactive use.
-- The tool uses Codex's configured default model unless the user explicitly overrides it.
-- Authentication is checked before starting an AI-backed workflow.
+- The skill runs in the user's active Codex session and uses its existing authentication and configured model.
+- No OpenAI API key, local Codex SDK wrapper, or nested model call is required.
 
 ## Safety boundaries
 
-- Codex runs read-only during analysis and drafting.
-- The Python controller, not Codex, applies accepted file changes.
+- Codex preserves the source during analysis and applies only explicitly accepted edits with repository tools.
 - PDF page images are temporary, used only for visual QA, and deleted immediately afterward.
 - Folder paths and slugs must remain inside the repository.
 - Existing tailored folders require explicit overwrite confirmation.
-- The controller validates LaTeX structure, historical titles, and numeric claims before writing.
-- The CLI never commits or pushes Git changes.
+- The bundled validator checks LaTeX structure, historical titles, numeric claims, one-page A4 output, text extraction, and hyperlinks.
+- The skill never commits or pushes Git changes without an explicit request.
 
-## Commands
+## Invocation
 
-```bash
-uv run resume
-uv run resume tailor
-uv run resume review
-uv run resume resume
-uv run resume status
+```text
+Use $tailor-resume to tailor my resume for this job description:
+
+<job description>
 ```
 
-Running `uv run resume` opens the mode-selection menu.
+The Python `uv run resume` interface remains available only as a migration fallback.

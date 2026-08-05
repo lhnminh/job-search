@@ -10,8 +10,10 @@ from typer.testing import CliRunner
 from resume_cli.build import BuildResult, PdfRenderError, PdfReport
 from resume_cli.cli import (
     _build_tailored_until_one_page,
+    _entry_groups,
     _fit_candidate_ids,
     _normalize_batch_reviews,
+    _parse_entry_command,
     _review_bullet_from_session,
     _snapshot,
     _undo,
@@ -39,7 +41,30 @@ class CliSmokeTests(unittest.TestCase):
     def test_tailor_yes_cannot_bypass_line_review(self) -> None:
         result = self.runner.invoke(app, ["tailor", "--yes", "--job-text", "Example job"])
         self.assertNotEqual(0, result.exit_code)
-        self.assertIn("cannot skip the required line-by-line review", result.output)
+        self.assertIn("cannot skip the required entry-by-entry review", result.output)
+
+    def test_entry_review_groups_each_job_with_its_bullets(self) -> None:
+        source = (REPO_ROOT / "_resume.tex").read_text(encoding="utf-8")
+        groups = _entry_groups(source)
+        bcg = next(group for group in groups if group["title"] == "Boston Consulting Group (BCG)")
+        self.assertEqual("Consultant", bcg["subtitle"])
+        self.assertEqual(3, len(bcg["line_ids"]))
+
+    def test_entry_commands_can_point_to_a_specific_bullet(self) -> None:
+        self.assertEqual(
+            ("rework", 2, "emphasize the financial model"),
+            _parse_entry_command("/rework 2 emphasize the financial model"),
+        )
+        self.assertEqual(
+            ("rework", 3, "make this more concise"),
+            _parse_entry_command("line 3: make this more concise"),
+        )
+        self.assertEqual(
+            ("rework", 2, "focus on asset management"),
+            _parse_entry_command("rewrite bullet 2 focus on asset management"),
+        )
+        self.assertEqual(("accept", 1, ""), _parse_entry_command("1 accept"))
+        self.assertEqual(("keep-all", None, ""), _parse_entry_command("/keep all"))
 
     def test_status_checks_real_repository(self) -> None:
         result = self.runner.invoke(app, ["status"])

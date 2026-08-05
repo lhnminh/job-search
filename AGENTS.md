@@ -22,21 +22,22 @@ The repository root `_resume.tex` is the canonical content library and source of
 - Preserve unrelated reference content whenever adding or updating material.
 - Build new tailored versions from the latest root `_resume.tex` unless the user explicitly names another starting point.
 
-### Interactive CLI source rules
+### Interactive Codex source rules
 
-The Codex-powered resume CLI follows a stricter append-only policy for the root source of truth:
+The repo-specific `tailor-resume` skill is the primary interactive workflow. The Python CLI remains a fallback during migration. Both follow a stricter append-only policy for the root source of truth:
 
-- Automated CLI operations may append accepted bullets, projects, or facts to root `_resume.tex`.
-- The CLI must never replace or delete existing root content.
+- Automated skill or CLI operations may append accepted bullets, projects, or facts to root `_resume.tex`.
+- The skill and CLI must never replace or delete existing root content.
 - Tailored versions may replace or remove their own content without changing the root source.
 - A tailored proposal is appended to the root only after the user explicitly selects `/source`.
-- A new metric, responsibility, technology, or outcome requires explicit user confirmation before the CLI may treat it as verified.
-- Tailor mode must begin from a complete copy of root `_resume.tex`, batch its initial Codex analysis, and then require an explicit decision for every content bullet except the contact header.
+- A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill or CLI may treat it as verified.
+- Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat or require a separate API key.
+- Tailoring must begin from a complete copy of root `_resume.tex` and review the resume section by section, then entry by entry. Each education item, job, and project is shown with all of its numbered bullets together, and every bullet requires an explicit decision. The contact header is excluded.
 - Employer, historical title, and date lines are locked context in the interactive session.
-- Tailor mode must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit line-level user decision.
-- Session state must be saved after each line decision so an interrupted tailoring session resumes in place.
+- Tailoring must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit line-level user decision.
+- Session state must be saved after each bullet decision so an interrupted tailoring session resumes at the same entry.
 
-These CLI-specific rules take precedence over the default manual merge semantics below whenever the interactive tool is applying a change.
+These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill or CLI is applying a change.
 
 ### Default merge semantics
 
@@ -149,3 +150,4 @@ Follow this sequence and explain changes step by step:
 - The project uses uv with Python 3.12. Keep `pyproject.toml`, `.python-version`, and `uv.lock` tracked when Python tooling is used.
 - Interactive CLI sessions belong under the gitignored `.resume/sessions/` directory.
 - Use `uv run resume` for the Codex-powered terminal tool and `uv run python -m unittest discover -v` for its test suite.
+- Use the repo-specific `$tailor-resume` skill for the primary conversational workflow. After building, run `uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "<target-folder>"` before visual PDF QA.
