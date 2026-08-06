@@ -24,20 +24,20 @@ The repository root `_resume.tex` is the canonical content library and source of
 
 ### Interactive Codex source rules
 
-The repo-specific `tailor-resume` skill is the primary interactive workflow. The Python CLI remains a fallback during migration. Both follow a stricter append-only policy for the root source of truth:
+The repo-specific `tailor-resume` skill is the interactive workflow. It follows a stricter append-only policy for the root source of truth:
 
-- Automated skill or CLI operations may append accepted bullets, projects, or facts to root `_resume.tex`.
-- The skill and CLI must never replace or delete existing root content.
+- Automated skill operations may append accepted bullets, projects, or facts to root `_resume.tex`.
+- The skill must never replace or delete existing root content.
 - Tailored versions may replace or remove their own content without changing the root source.
 - A tailored proposal is appended to the root only after the user explicitly selects `/source`.
-- A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill or CLI may treat it as verified.
-- Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat or require a separate API key.
+- A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
+- Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat, terminal chat interface, or require a separate API key.
 - Tailoring must begin from a complete copy of root `_resume.tex` and review the resume section by section, then entry by entry. Each education item, job, and project is shown with all of its numbered bullets together, and every bullet requires an explicit decision. The contact header is excluded.
 - Employer, historical title, and date lines are locked context in the interactive session.
 - Tailoring must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit line-level user decision.
 - Session state must be saved after each bullet decision so an interrupted tailoring session resumes at the same entry.
 
-These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill or CLI is applying a change.
+These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill is applying a change.
 
 ### Default merge semantics
 
@@ -79,7 +79,7 @@ Tailored versions are selective snapshots. They do not replace the reference and
 - Flag material eligibility mismatches to the user, but do not alter truthful education or employment facts to hide them.
 - Every tailored version must be exactly one A4 page. This is a hard submission rule, not a per-job preference.
 - Preserve every verified work position with at least one substantive bullet. Allocate additional bullets to the roles most relevant to the job description, and consolidate repeated technology lists before removing a position.
-- Resume variants created by the interactive CLI must be exactly one A4 page.
+- Resume variants created by the interactive skill must be exactly one A4 page.
 
 ## Projects Are Additive
 
@@ -147,7 +147,7 @@ Follow this sequence and explain changes step by step:
 - Do not commit or push changes unless the user explicitly requests it.
 - Do not stage unrelated worktree changes.
 - Keep `.venv/`, caches, LaTeX intermediates, and temporary renders untracked.
-- The project uses uv with Python 3.12. Keep `pyproject.toml`, `.python-version`, and `uv.lock` tracked when Python tooling is used.
-- Interactive CLI sessions belong under the gitignored `.resume/sessions/` directory.
-- Use `uv run resume` for the Codex-powered terminal tool and `uv run python -m unittest discover -v` for its test suite.
+- The validator uses uv with Python 3.12. Keep `pyproject.toml`, `.python-version`, and `uv.lock` tracked when its dependencies change.
+- Interactive skill sessions belong under the gitignored `.resume/sessions/` directory.
+- Use `uv run python -m unittest discover -v` for the validator test suite.
 - Use the repo-specific `$tailor-resume` skill for the primary conversational workflow. After building, run `uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "<target-folder>"` before visual PDF QA.

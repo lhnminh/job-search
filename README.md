@@ -1,159 +1,131 @@
-# Resume builds
+# Conversational resume tailoring with Codex
 
-The comprehensive source-of-truth resume lives at the repository root as two files:
+This repository is a reusable, repository-local Codex workflow for turning one comprehensive LaTeX resume into job-specific, one-page A4 resumes. Tailoring happens in the active Codex conversation: you review every education item, role, project, and bullet before Codex writes a result.
 
-- `_resume.tex` - editable content for that version.
-- `Morgan_Le_Resume.pdf` - rendered output for that version.
+The workflow is deliberately conservative. It treats the root `_resume.tex` as the verified source of truth, does not invent facts, and does not silently remove content to fit a page.
 
-Each tailored resume version lives in its own internal folder with the same two-file structure. Shared LaTeX classes, styles, and fonts live once under `shared/latex/`. The build script combines the selected `_resume.tex` with those shared files in a temporary compilation directory.
+## What is tracked
 
 ```text
-_resume.tex                     # Comprehensive source of truth
-Morgan_Le_Resume.pdf            # Rendered source of truth
-shared/latex/                  # Shared moderncv files and fonts
-finance-consulting/
-  _resume.tex
-  Morgan_Le_Resume.pdf
-macquarie-asset-management/
-  _resume.tex
-  Morgan_Le_Resume.pdf
+_resume.tex                                  # Comprehensive source of truth
+.agents/skills/tailor-resume/                # Repository-local Codex skill
+  SKILL.md
+  agents/openai.yaml
+  scripts/validate_resume.py
+  scripts/resume_validation.py
+scripts/build_resume.sh                      # Isolated Tectonic build
+shared/latex/                                # Shared class, styles, and fonts
+AGENTS.md                                    # Repository rules for Codex
+SPEC.md                                      # Workflow contract
+pyproject.toml and uv.lock                   # Validator dependency lock
 ```
 
-The root `_resume.tex` is the comprehensive reference resume. It accumulates all verified positions, bullet points, and projects and may span multiple pages. It is not constrained to be submission-ready. Application-specific versions should start from this reference and select, reorder, or tailor the most relevant content.
+Generated PDFs, session ledgers, and tailored result folders are local working artifacts and are ignored by Git. The root `_resume.tex` remains tracked so each fork has one canonical, reviewable history of verified resume facts.
 
-Build the current version:
+## Prerequisites
 
-```bash
-./scripts/build_resume.sh
-```
+- [Codex](https://openai.com/codex/) with repository-local skills available.
+- [Tectonic](https://tectonic-typesetting.github.io/) on `PATH` for PDF builds. On macOS with Homebrew: `brew install tectonic`.
+- [uv](https://docs.astral.sh/uv/) with Python 3.12 or later for deterministic validation.
+- Optional: Poppler for rendering PDF pages during visual QA.
 
-With no argument, the build writes the source-of-truth PDF to the repository root. A tailored build writes `Morgan_Le_Resume.pdf` inside the selected internal resume folder. Building one version never overwrites another version's PDF. Build intermediates are created in the system temporary directory and removed automatically.
-
-To create another version:
-
-1. Create a new internal folder.
-2. Copy only the root `_resume.tex` into it.
-3. Select, reorder, and tailor the relevant content in the copied `_resume.tex`.
-4. Run the script with the new internal folder name to create its PDF.
-
-For example:
-
-```bash
-./scripts/build_resume.sh "finance-consulting"
-```
-
-The `finance-consulting/` version emphasizes consulting, commercial finance, pricing, market analysis, P&L analysis, and real estate analytics.
-
-Build the Macquarie Asset Management application version:
-
-```bash
-./scripts/build_resume.sh "macquarie-asset-management"
-```
-
-The `macquarie-asset-management/` version emphasizes real estate, client solutions, commercial analytics, quantitative analysis, Excel, infrastructure, and long-term value creation.
-
-Rebuilding a version intentionally replaces only the `Morgan_Le_Resume.pdf` inside that same internal folder. The script uses the installed `tectonic` command, or the executable specified by `RESUME_TECTONIC_BIN`.
-
-## Python environment
-
-The project uses uv with Python 3.12. Create or update the local environment from the committed lockfile:
+Install the validator dependency:
 
 ```bash
 uv sync
 ```
 
-Run future Python tooling through uv:
+## Set up your fork
+
+1. Fork or clone the repository.
+2. Replace the personal details and resume content in root `_resume.tex` with your own verified history. Preserve the `moderncv` document structure and `\customcventry` entries used by the validator.
+3. Review `AGENTS.md` and adjust any personal content policies you want Codex to follow.
+4. If desired, replace `Morgan_Le_Resume.pdf` in `scripts/build_resume.sh`, the skill, and the repository instructions with your preferred output filename.
+5. Build the comprehensive reference once:
 
 ```bash
-uv run python --version
+./scripts/build_resume.sh
 ```
 
-Add a project dependency with `uv add <package>`. Commit both `pyproject.toml` and `uv.lock` whenever dependencies change.
+The generated root PDF is ignored; `_resume.tex` is the durable source.
 
-## Conversational Codex skill
+## Tailor a resume
 
-The primary tailoring workflow is the repo-specific `tailor-resume` skill. It runs directly in your current Codex conversation, so there is no nested chat interface and no separate API key.
-
-Start a new Codex task in this repository and say:
+Open the repository in Codex and start a task with:
 
 ```text
 Use $tailor-resume to tailor my resume for this job description:
 
-<paste job description>
+<paste the complete job description>
 ```
 
-The skill reviews Education, Relevant Experience, Projects, and other sections in order. Within each section it shows one complete school, job, or project with all bullets numbered. You can respond naturally:
+Codex will:
+
+1. Read the complete root source and job description.
+2. Propose a lowercase, hyphenated result-folder name.
+3. Review the resume section by section and entry by entry, with every bullet numbered.
+4. Require an explicit Keep, Rewrite, or Remove decision for each bullet.
+5. Save decisions to a local `.resume/sessions/` ledger so interrupted work can resume.
+6. Assemble the approved tailored source without changing root `_resume.tex`.
+7. Build, validate, and visually inspect an exactly one-page A4 PDF.
+
+Natural replies work; no terminal command language is required. For example:
 
 ```text
-Rewrite line 2 with more finance emphasis.
-Keep 1 and 3.
-Remove the technologies line.
-Show me the whole experience section again.
+Keep 1 and 3. Rewrite 2 to emphasize the forecasting work, but do not add any new metrics.
 ```
 
-Every bullet requires an explicit decision. Codex records decisions in a temporary gitignored session ledger, creates or updates the tailored folder only after review, and never changes the source of truth unless you explicitly request an append. Page fitting is also conversational: nothing is removed or shortened automatically.
+To append an accepted fact or bullet to the source of truth, say so explicitly. Root updates are append-only in this workflow.
 
-After building, the skill runs a deterministic source/PDF validator and performs visual QA. Tailored folders still contain only `_resume.tex` and `Morgan_Le_Resume.pdf`.
+## Build and validate manually
 
-## Legacy interactive CLI
-
-The Python terminal application remains available as a fallback while the skill-first workflow is validated. It uses the Codex authentication already configured on the machine.
-
-Start the mode-selection menu:
+With no argument, the build script compiles root `_resume.tex`:
 
 ```bash
-uv run resume
+./scripts/build_resume.sh
 ```
 
-The CLI checks the existing local Codex login before starting. Confirm it manually with:
+Pass a root-level result folder to build a tailored version:
 
 ```bash
-codex login status
+./scripts/build_resume.sh "company-role"
 ```
 
-When pasting a job description, finish the paste with a line containing only `.done`.
+The build runs in a temporary directory, copies in `shared/latex/`, and writes only `company-role/Morgan_Le_Resume.pdf`.
 
-Create a one-page tailored resume through an interactive entry-by-entry session:
+Validate a tailored result after building:
 
 ```bash
-uv run resume tailor
+uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "company-role"
 ```
 
-Tailor mode starts with the complete root resume. Codex analyzes all content lines in one batch for speed, then the CLI presents one complete education item, job, or project at a time. All bullets are numbered and remain visible together, while contact details are skipped and employer/title/date headers are locked.
+The validator checks that the folder contains only its source and PDF, historical employers/titles/dates and contact fields still match the source of truth, numeric claims are verified, every work position remains represented, and the PDF is one A4 page with extractable text and hyperlinks.
 
-You can target a particular bullet while retaining the complete entry as context—for example, `/rework 2 emphasize the financial model`. Use `/accept 2`, `/keep 2`, or `/remove 2` to decide individual bullets; `/accept-all` and `/keep-all` handle the undecided bullets in the visible entry. `/next` is available only after every bullet in that entry has a saved decision. `/back`, `/undo`, and `/quit` handle navigation and resumability.
-
-After every entry has been reviewed, the CLI builds a temporary preview. If it is longer than one page, the CLI asks you to shorten, remove, or keep individual lines until it fits. It does not automatically cut positions or bullets. Sessions are saved after each decision and can be continued with `uv run resume resume`. The non-interactive `--yes` option is disabled because it would bypass the entry review.
-
-Review a resume bullet by bullet and section by section:
-
-```bash
-uv run resume review
-uv run resume review "finance-consulting"
-```
-
-Resume the latest unfinished conversation:
-
-```bash
-uv run resume resume
-```
-
-Check authentication, source parsing, available versions, and unfinished sessions:
-
-```bash
-uv run resume status
-```
-
-The root source is append-only when changed through the CLI. Tailored versions can be rewritten, but accepted content reaches the root only through an explicit `/source` action. Every generated variant must fit exactly one A4 page, preserve every work position with at least one substantive bullet, and allocate extra space to the roles most relevant to the job. See `SPEC.md` for the complete behavior contract.
-
-During the separate `review` mode, ordinary text is sent to Codex as a revision instruction. Its available shortcuts are `/accept`, `/keep`, `/regenerate`, `/source`, `/skip`, `/back`, `/undo`, and `/done`. The tool also pauses after each section for a section-level review.
-
-Every successful build is checked for A4 size, page count, extractable text, and hyperlinks. The PDF is then rendered page by page for Codex visual inspection. Temporary page images are deleted automatically.
-
-The CLI uses Poppler's `pdftoppm` when it is available and otherwise falls back to the project-managed PyMuPDF dependency. Run `uv sync` after pulling dependency changes. PDF-renderer failures stop immediately and are never sent back to Codex as resume-rewriting instructions.
-
-Run the test suite:
+Run the validator unit tests with:
 
 ```bash
 uv run python -m unittest discover -v
 ```
+
+## Data and Git behavior
+
+- Root `_resume.tex` is intentionally tracked and may contain personal information. Review it carefully before making a fork public.
+- Root and tailored PDFs are generated and ignored.
+- Root-level tailored `_resume.tex` files are ignored, so application-specific drafts and job-search history are not published accidentally.
+- `.resume/`, virtual environments, Python caches, and LaTeX intermediates are ignored.
+- The skill never commits or pushes unless you explicitly request it.
+
+## Design constraints
+
+- Never invent employers, titles, dates, responsibilities, technologies, metrics, or outcomes.
+- Do not change a historical job title merely to match a posting.
+- Keep the comprehensive root source append-only during the interactive workflow.
+- Preserve every verified work position with at least one substantive bullet in each tailored version.
+- Require explicit line-level decisions during tailoring and page fitting.
+- Require every tailored PDF to be exactly one A4 page and visually inspect it before use.
+
+See `SPEC.md` for the full behavioral contract.
+
+## License
+
+No open-source license is included yet. Public visibility lets people read and fork the repository on GitHub, but reuse rights remain reserved until the repository owner chooses a license.

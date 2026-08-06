@@ -9,13 +9,13 @@ The workflow supports two intents:
 1. **Tailor:** Create a polished one-page application-specific resume from a pasted job description.
 2. **Review:** Walk through a resume section by section, entry by entry, and bullet by bullet with conversational Codex feedback.
 
-The repo-specific skill lives at `.agents/skills/tailor-resume/`. The existing Python CLI remains a temporary fallback during migration, not the primary interaction layer.
+The repo-specific skill lives at `.agents/skills/tailor-resume/`. It is the only interactive interface; the Python code under the skill is deterministic validation support, not a chat application.
 
 ## Canonical content
 
 - The repository root `_resume.tex` remains the comprehensive source of truth.
 - Automated interactive operations may only append explicitly accepted content to the root source.
-- The skill and fallback CLI must never replace or delete an existing root bullet, entry, project, section, or verified fact.
+- The skill must never replace or delete an existing root bullet, entry, project, section, or verified fact.
 - Tailored versions may select, reorder, condense, replace, or remove content without changing the root source.
 - An accepted tailored bullet reaches the root source only through an explicit `/source` action.
 
@@ -103,5 +103,3 @@ Use $tailor-resume to tailor my resume for this job description:
 
 <job description>
 ```
-
-The Python `uv run resume` interface remains available only as a migration fallback.

@@ -2,6 +2,11 @@
 tmp/
 .resume/
 
+# Generated resume artifacts
+/Morgan_Le_Resume.pdf
+/*/_resume.tex
+/*/Morgan_Le_Resume.pdf
+
 # Python environments and caches
 .venv/
 __pycache__/

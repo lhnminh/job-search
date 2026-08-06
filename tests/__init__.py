@@ -1,1 +1,1 @@
-"""Resume CLI test suite."""
+"""Tests for the repository-local resume tailoring skill."""

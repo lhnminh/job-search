@@ -5,8 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
+
+from resume_validation import (
+    ResumeValidationError,
+    tailored_source_path,
+    validate_tailored_completeness,
+    validate_tailored_tex,
+    verify_pdf,
+)
 
 
 def repository_root() -> Path:
@@ -31,16 +38,11 @@ def parse_arguments() -> argparse.Namespace:
 def main() -> int:
     arguments = parse_arguments()
     root = repository_root()
-    sys.path.insert(0, str(root / "src"))
-
-    from resume_cli.build import verify_pdf
-    from resume_cli.resume import (
-        resume_path,
-        validate_tailored_completeness,
-        validate_tailored_tex,
-    )
-
-    source_path = resume_path(root, arguments.target)
+    try:
+        source_path = tailored_source_path(root, arguments.target)
+    except ResumeValidationError as error:
+        print(json.dumps({"approved": False, "target": arguments.target, "errors": [str(error)]}, indent=2))
+        return 1
     target_directory = source_path.parent
     pdf_path = target_directory / "Morgan_Le_Resume.pdf"
     errors: list[str] = []
