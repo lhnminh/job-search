@@ -10,6 +10,7 @@ VALIDATION_SCRIPTS = REPOSITORY_ROOT / ".agents" / "skills" / "tailor-resume" / 
 sys.path.insert(0, str(VALIDATION_SCRIPTS))
 
 from resume_validation import (  # noqa: E402
+    MASTER_SOURCE_RELATIVE_PATH,
     ResumeValidationError,
     parse_resume,
     tailored_source_path,
@@ -21,7 +22,7 @@ from resume_validation import (  # noqa: E402
 class ResumeValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.source = (REPOSITORY_ROOT / "_resume.tex").read_text(encoding="utf-8")
+        cls.source = (REPOSITORY_ROOT / MASTER_SOURCE_RELATIVE_PATH).read_text(encoding="utf-8")
 
     def test_parses_reference_entries(self) -> None:
         entries = parse_resume(self.source)
@@ -56,6 +57,10 @@ class ResumeValidationTests(unittest.TestCase):
     def test_rejects_target_outside_repository(self) -> None:
         with self.assertRaises(ResumeValidationError):
             tailored_source_path(REPOSITORY_ROOT, "../../outside")
+
+    def test_rejects_master_as_tailored_target(self) -> None:
+        with self.assertRaises(ResumeValidationError):
+            tailored_source_path(REPOSITORY_ROOT, "master")
 
 
 if __name__ == "__main__":

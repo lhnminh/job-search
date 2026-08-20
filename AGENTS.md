@@ -6,33 +6,33 @@ This repository maintains one comprehensive resume reference and multiple applic
 
 Before editing, identify which of these the user is requesting:
 
-1. A change to the comprehensive reference in the repository root `_resume.tex`.
+1. A change to the comprehensive reference in `master/_resume.tex`.
 2. A change to an existing tailored version.
 3. A new tailored version for a job, company, or discipline.
 
 Do not treat these as interchangeable.
 
-## Canonical Reference: Root `_resume.tex`
+## Canonical Reference: `master/_resume.tex`
 
-The repository root `_resume.tex` is the canonical content library and source of truth for verified resume facts. Its rendered counterpart is the root `Morgan_Le_Resume.pdf`.
+`master/_resume.tex` is the canonical content library and source of truth for verified resume facts. Its rendered counterpart is `master/Morgan_Le_Resume.pdf`.
 
 - It should accumulate all verified positions, bullet points, projects, skills, awards, and education details.
 - It may be two or more pages. Do not shorten it merely to meet a one-page resume convention.
 - Do not remove content from it to make a tailored application stronger.
 - Preserve unrelated reference content whenever adding or updating material.
-- Build new tailored versions from the latest root `_resume.tex` unless the user explicitly names another starting point.
+- Build new tailored versions from the latest `master/_resume.tex` unless the user explicitly names another starting point.
 
 ### Interactive Codex source rules
 
-The repo-specific `tailor-resume` skill is the interactive workflow. It follows a stricter append-only policy for the root source of truth:
+The repo-specific `tailor-resume` skill is the interactive workflow. It follows a stricter append-only policy for the master source of truth:
 
-- Automated skill operations may append accepted bullets, projects, or facts to root `_resume.tex`.
-- The skill must never replace or delete existing root content.
-- Tailored versions may replace or remove their own content without changing the root source.
-- A tailored proposal is appended to the root only after the user explicitly selects `/source`.
+- Automated skill operations may append accepted bullets, projects, or facts to `master/_resume.tex`.
+- The skill must never replace or delete existing master content.
+- Tailored versions may replace or remove their own content without changing the master source.
+- A tailored proposal is appended to the master only after the user explicitly selects `/source`.
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
 - Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat, terminal chat interface, or require a separate API key.
-- Tailoring must begin from a complete copy of root `_resume.tex` and review the resume section by section, then entry by entry. Each education item, job, and project is shown with all of its numbered bullets together, and every bullet requires an explicit decision. The contact header is excluded.
+- Tailoring must begin from a complete copy of `master/_resume.tex` and review the resume section by section, then entry by entry. Each education item, job, and project is shown with all of its numbered bullets together, and every bullet requires an explicit decision. The contact header is excluded.
 - Employer, historical title, and date lines are locked context in the interactive session.
 - Tailoring must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit line-level user decision.
 - Session state must be saved after each bullet decision so an interrupted tailoring session resumes at the same entry.
@@ -63,7 +63,7 @@ Examples:
 For a new tailored version:
 
 1. Create a descriptive internal folder.
-2. Copy only the latest root `_resume.tex` into it.
+2. Copy only the latest `master/_resume.tex` into it.
 3. Select, reorder, condense, or rewrite the most relevant verified content.
 4. Preserve factual accuracy and quantified outcomes.
 5. Build and visually verify the tailored version, which creates its folder-owned PDF.
@@ -83,7 +83,7 @@ Tailored versions are selective snapshots. They do not replace the reference and
 
 ## Projects Are Additive
 
-Projects in the root `_resume.tex` are a reference inventory.
+Projects in `master/_resume.tex` are a reference inventory.
 
 - Adding a project means placing it alongside existing projects.
 - Do not infer that a newly supplied project should replace the currently visible project.
@@ -99,16 +99,16 @@ Use the existing build script:
 ./scripts/build_resume.sh "resume-folder-name"
 ```
 
-- No argument builds the root source of truth.
+- No argument builds the master source of truth.
 - A folder argument builds that internal version.
-- The source-of-truth build writes root `Morgan_Le_Resume.pdf`.
+- The source-of-truth build writes `master/Morgan_Le_Resume.pdf`.
 - A tailored build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
 - Every tailored resume folder must contain only `_resume.tex` and its independent `Morgan_Le_Resume.pdf`.
 - Shared LaTeX classes, styles, and fonts belong only in `shared/latex/`.
 - Do not duplicate shared support files inside resume folders.
 - The build script must compile in a temporary directory containing the selected `_resume.tex` and copied `shared/latex/` files.
 - Do not expose internal version names in the PDF filename.
-- A build may overwrite only the root PDF or the PDF inside the selected tailored folder. It must never overwrite another version's PDF.
+- A build may overwrite only the master PDF or the PDF inside the selected tailored folder. It must never overwrite another version's PDF.
 - Do not use a shared output PDF or a central `output/pdf/` directory.
 - Tectonic is installed through Homebrew. Prefer the installed `tectonic` command.
 - Build intermediates must remain temporary and should be removed after verification.
@@ -125,7 +125,7 @@ After every resume build:
 6. Confirm hyperlinks remain present.
 7. Remove temporary QA files before completing the task.
 
-For the root source of truth, multiple pages are acceptable. Use clean page boundaries rather than deleting content. Every tailored version must remain exactly one A4 page.
+For the master source of truth, multiple pages are acceptable. Use clean page boundaries rather than deleting content. Every tailored version must remain exactly one A4 page.
 
 ## Editing Workflow
 

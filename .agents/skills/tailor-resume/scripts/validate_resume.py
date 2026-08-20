@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from resume_validation import (
+    MASTER_SOURCE_RELATIVE_PATH,
     ResumeValidationError,
     tailored_source_path,
     validate_tailored_completeness,
@@ -18,7 +19,7 @@ from resume_validation import (
 
 def repository_root() -> Path:
     for parent in Path(__file__).resolve().parents:
-        if (parent / "AGENTS.md").is_file() and (parent / "_resume.tex").is_file():
+        if (parent / "AGENTS.md").is_file() and (parent / MASTER_SOURCE_RELATIVE_PATH).is_file():
             return parent
     raise RuntimeError("Could not locate the resume repository root")
 
@@ -30,7 +31,7 @@ def parse_arguments() -> argparse.Namespace:
         "--confirmed-fact",
         action="append",
         default=[],
-        help="A user-confirmed fact allowed in addition to root _resume.tex; repeat as needed",
+        help="A user-confirmed fact allowed in addition to master/_resume.tex; repeat as needed",
     )
     return parser.parse_args()
 
@@ -59,7 +60,7 @@ def main() -> int:
 
     report = None
     if not errors:
-        root_source = (root / "_resume.tex").read_text(encoding="utf-8")
+        root_source = (root / MASTER_SOURCE_RELATIVE_PATH).read_text(encoding="utf-8")
         tailored_source = source_path.read_text(encoding="utf-8")
         errors.extend(
             validate_tailored_tex(root_source, tailored_source, arguments.confirmed_fact)

@@ -17,6 +17,7 @@ CLAIM_RE = re.compile(
     r"(?:\b\d+(?:\.\d+)?\+)|(?:\b\d+(?:\.\d+)?/\d+(?:\.\d+)?)",
     re.IGNORECASE,
 )
+MASTER_SOURCE_RELATIVE_PATH = Path("master") / "_resume.tex"
 
 
 class ResumeValidationError(ValueError):
@@ -297,6 +298,9 @@ def tailored_source_path(repository: Path, target: str) -> Path:
     if not target or target in {".", "root"}:
         raise ResumeValidationError("Validator target must be a tailored resume folder")
     source = (root / target / "_resume.tex").resolve()
+    master_source = (root / MASTER_SOURCE_RELATIVE_PATH).resolve()
     if root not in source.parents or source.parent == root:
         raise ResumeValidationError(f"Resume target must stay in a repository subfolder: {target}")
+    if source == master_source:
+        raise ResumeValidationError("Validator target must be a tailored resume folder, not master")
     return source

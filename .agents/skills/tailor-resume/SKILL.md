@@ -10,10 +10,10 @@ Run the resume-building session directly in the current Codex conversation. Do n
 ## Establish the task
 
 1. Read the repository `AGENTS.md` and inspect `git status`.
-2. Read root `_resume.tex` completely. Treat it as the verified factual source.
+2. Read `master/_resume.tex` completely. Treat it as the verified factual source.
 3. Read the pasted job description completely.
 4. Identify whether the user wants a new tailored version or an existing version revised.
-5. State that root content will remain untouched unless the user explicitly requests an append.
+5. State that master content will remain untouched unless the user explicitly requests an append.
 6. Suggest a lowercase hyphenated folder slug. Do not overwrite an existing variant without confirmation.
 
 Do not review the contact header. Treat section names, employer names, historical job titles, schools, and dates as locked context unless the user explicitly corrects a source fact.
@@ -24,7 +24,7 @@ Create a gitignored session ledger under `.resume/sessions/` before beginning th
 
 - the job description or its path;
 - the proposed target slug;
-- the root `_resume.tex` hash;
+- the `master/_resume.tex` hash;
 - each entry and its stable source-order bullet numbers;
 - each explicit decision and approved replacement text;
 - newly confirmed facts;
@@ -90,21 +90,21 @@ Do not advance to the next entry until every bullet in the current entry has an 
 
 ## Protect factual accuracy and coverage
 
-- Use only facts in root `_resume.tex` or facts explicitly confirmed in the current conversation.
+- Use only facts in `master/_resume.tex` or facts explicitly confirmed in the current conversation.
 - Never invent or strengthen metrics, responsibilities, technologies, scope, or outcomes.
 - Never change a historical employer, title, school, or date merely to match a posting.
 - Preserve every work position with at least one substantive bullet.
 - Treat technology/tool bullets as metadata, not as the required substantive bullet.
-- Preserve unrelated root content and never shorten the root for page fit.
-- Add material to root only after an explicit request such as “add this to the source of truth.”
-- Append root projects; do not replace existing root projects.
+- Preserve unrelated master content and never shorten the master for page fit.
+- Add material to the master only after an explicit request such as “add this to the source of truth.”
+- Append master projects; do not replace existing master projects.
 
 ## Assemble the tailored version
 
 After all entries are decided:
 
 1. Show a compact decision summary and ask for approval to assemble the variant.
-2. Copy the latest root `_resume.tex` into the approved target folder.
+2. Copy the latest `master/_resume.tex` into the approved target folder.
 3. Apply only accepted tailored decisions to the copy.
 4. Remove active `\newpage` commands from the tailored copy.
 5. Use restrained layout compaction only when necessary. Preserve legibility and contact information.
@@ -138,7 +138,7 @@ Report:
 
 - the target folder and PDF;
 - what was rewritten, retained, or removed;
-- that root `_resume.tex` remained unchanged or exactly what was appended;
+- that `master/_resume.tex` remained unchanged or exactly what was appended;
 - page count, A4 status, extractable text, hyperlinks, and visual QA result;
 - whether changes are uncommitted, committed, or pushed.
 

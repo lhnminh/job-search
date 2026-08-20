@@ -2,12 +2,14 @@
 
 This repository turns a comprehensive LaTeX resume into job-specific, one-page A4 resumes through a conversational Codex workflow.
 
-The root [`_resume.tex`](_resume.tex) is the verified source of truth. During tailoring, Codex reviews every education item, role, project, and bullet with you before writing a result. It does not invent facts or silently remove content to make a resume fit.
+[`master/_resume.tex`](master/_resume.tex) is the verified source of truth. During tailoring, Codex reviews every education item, role, project, and bullet with you before writing a result. It does not invent facts or silently remove content to make a resume fit.
 
 ## Repository structure
 
 ```text
-_resume.tex                       Comprehensive resume source
+master/
+  _resume.tex                    Comprehensive resume source
+  Morgan_Le_Resume.pdf           Generated comprehensive resume
 .agents/skills/tailor-resume/     Repository-local Codex skill and validator
 scripts/build_resume.sh           Isolated Tectonic build script
 shared/latex/                     Shared LaTeX classes, styles, and fonts
@@ -16,7 +18,7 @@ SPEC.md                           Detailed workflow contract
 pyproject.toml and uv.lock        Validator dependencies
 ```
 
-Generated PDFs, tailored resume folders, and session data are local artifacts ignored by Git. Only the root `_resume.tex` is the canonical, version-controlled resume history.
+Generated PDFs, tailored resume folders, and session data are local artifacts ignored by Git. Only `master/_resume.tex` is the canonical, version-controlled resume history.
 
 ## Requirements
 
@@ -40,7 +42,7 @@ uv sync
 ## Set up your resume
 
 1. Fork or clone this repository.
-2. Replace the personal details and resume content in root `_resume.tex` with your verified history. Keep the existing `moderncv` structure and `\customcventry` entries used by the validator.
+2. Replace the personal details and resume content in `master/_resume.tex` with your verified history. Keep the existing `moderncv` structure and `\customcventry` entries used by the validator.
 3. Review `AGENTS.md` and adjust the content policies if needed.
 4. Build the comprehensive resume:
 
@@ -48,7 +50,7 @@ uv sync
    ./scripts/build_resume.sh
    ```
 
-The build creates `Morgan_Le_Resume.pdf` in the repository root. The PDF is ignored by Git; `_resume.tex` remains the durable source.
+The build creates `master/Morgan_Le_Resume.pdf`. The PDF is ignored by Git; `master/_resume.tex` remains the durable source.
 
 To use a different output filename, update it consistently in the build script, skill, and repository instructions.
 
@@ -69,7 +71,7 @@ Codex will:
 3. Review each resume section, entry, and numbered bullet.
 4. Ask you to keep, rewrite, or remove every bullet.
 5. Save progress under `.resume/sessions/` so an interrupted review can resume.
-6. Build and validate the approved resume without changing the root source.
+6. Build and validate the approved resume without changing the master source.
 7. Verify that the result is exactly one A4 page and visually inspect it.
 
 You can reply naturally, for example:
@@ -78,7 +80,7 @@ You can reply naturally, for example:
 Keep 1 and 3. Rewrite 2 to emphasize the forecasting work, but do not add new metrics.
 ```
 
-Root updates are append-only in the interactive workflow. To add an accepted fact or bullet to the source of truth, explicitly ask Codex to do so.
+Master updates are append-only in the interactive workflow. To add an accepted fact or bullet to the source of truth, explicitly ask Codex to do so.
 
 ## Build and validate manually
 
@@ -115,7 +117,7 @@ The validator checks folder contents, protected historical and contact fields, n
 - Keep at least one substantive bullet for every verified work position in a tailored resume.
 - Require explicit line-level decisions during tailoring and page fitting.
 - Treat every tailored resume as a one-page A4 document.
-- Review root `_resume.tex` before making a fork public because it contains personal information.
+- Review `master/_resume.tex` before making a fork public because it contains personal information.
 - Codex does not commit or push changes unless explicitly asked.
 
 See [`SPEC.md`](SPEC.md) for the full workflow contract.
