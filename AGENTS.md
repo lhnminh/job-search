@@ -32,10 +32,11 @@ The repo-specific `tailor-resume` skill is the interactive workflow. It follows 
 - A tailored proposal is appended to the master only after the user explicitly selects `/source`.
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
 - Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat, terminal chat interface, or require a separate API key.
-- Tailoring must begin from a complete copy of `master/_resume.tex` and review the resume section by section, then entry by entry. Each education item, job, and project is shown with all of its numbered bullets together, and every bullet requires an explicit decision. The contact header is excluded.
+- A new tailoring session must begin from a complete copy of `master/_resume.tex` and review the resume section by section, then entry by entry. Each education item, job, and project is shown with all of its numbered bullets together, and every bullet requires an explicit decision. The contact header is excluded.
+- A continuing session may use the bundled ledger helper to verify the saved master hash and load only the active entry. When the hash matches, do not reread `AGENTS.md`, the full master, or a job description already present in conversation context. A mismatch makes the session stale and requires a complete master reread and reconciliation before continuing.
 - Employer, historical title, and date lines are locked context in the interactive session.
 - Tailoring must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit line-level user decision.
-- Session state must be saved after each bullet decision so an interrupted tailoring session resumes at the same entry.
+- Session state must include every bullet decision before Codex replies. When one user message decides multiple bullets, persist all of those decisions together in one atomic batch rather than performing separate ledger writes.
 
 These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill is applying a change.
 

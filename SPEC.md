@@ -32,12 +32,12 @@ The repo-specific skill lives at `.agents/skills/tailor-resume/`. It is the only
 The user invokes `$tailor-resume` and pastes a job description in the Codex conversation. The skill then:
 
 1. Uses the active repository-aware Codex conversation; it does not start a nested Codex thread.
-2. Reads the complete master resume and job description without changing the source.
-3. Creates a gitignored decision ledger for resumability.
+2. For a new session, reads the complete master resume and job description without changing the source.
+3. Creates a gitignored decision ledger containing parsed source-order entries and a master hash for resumability.
 4. Walks through the resume section by section and entry by entry: each education item, job, and project is shown with all of its numbered bullets and Codex recommendations together. The contact header is excluded, while entry headers are locked context.
 5. Lets the user point to a specific bullet within the visible entry using natural language, such as “rewrite line 2 with more finance emphasis,” without losing the surrounding job context.
 6. Requires an explicit decision for every bullet before moving to the next entry. The user may accept, keep, remove, regenerate, rework, accept all, keep all, go back, undo, or quit.
-7. Saves every decision immediately so the session can resume at the same entry.
+7. Saves every explicit decision before replying. Decisions made in one user message are written together in one atomic batch.
 8. Suggests a descriptive folder slug and requires confirmation before creating or overwriting a folder.
 9. Builds temporary previews only after every entry has been reviewed.
 10. If the draft exceeds one page, enters an interactive page-fit pass. It presents low-relevance or metadata lines one at a time and requires the user to keep, remove, or approve a shorter rewrite. The tool never deletes or rewrites a line automatically.
@@ -79,6 +79,8 @@ For master review, accepting revised wording appends it beside the existing bull
 
 - Interactive state is stored under `.resume/sessions/`, which is gitignored.
 - A skill session ledger records the target, master hash, job description, current section and entry, accepted bullet decisions, and confirmed facts.
+- A continuing session verifies the current master hash and, when it matches, loads only the active entry instead of rereading the full master and repository instructions.
+- A hash mismatch marks the session stale and requires a complete master reread and reconciliation before any further decision is saved.
 - The active Codex task and ledger provide conversational continuity.
 - Completed skill ledgers are removed after successful verification unless the user requests retention.
 

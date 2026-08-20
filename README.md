@@ -10,7 +10,7 @@ This repository turns a comprehensive LaTeX resume into job-specific, one-page A
 master/
   _resume.tex                    Comprehensive resume source
   Morgan_Le_Resume.pdf           Generated comprehensive resume
-.agents/skills/tailor-resume/     Repository-local Codex skill and validator
+.agents/skills/tailor-resume/     Repository-local Codex skill, session helper, and validator
 scripts/build_resume.sh           Isolated Tectonic build script
 shared/latex/                     Shared LaTeX classes, styles, and fonts
 AGENTS.md                         Repository rules for Codex
@@ -70,7 +70,7 @@ Codex will:
 2. Propose a lowercase, hyphenated folder name.
 3. Review each resume section, entry, and numbered bullet.
 4. Ask you to keep, rewrite, or remove every bullet.
-5. Save progress under `.resume/sessions/` so an interrupted review can resume.
+5. Save each message's decisions atomically under `.resume/sessions/` so an interrupted review can resume.
 6. Build and validate the approved resume without changing the master source.
 7. Verify that the result is exactly one A4 page and visually inspect it.
 
@@ -81,6 +81,12 @@ Keep 1 and 3. Rewrite 2 to emphasize the forecasting work, but do not add new me
 ```
 
 Master updates are append-only in the interactive workflow. To add an accepted fact or bullet to the source of truth, explicitly ask Codex to do so.
+
+### Fast session resume
+
+The bundled session helper stores parsed entries and the master-resume hash. On a continued review, it verifies that hash and returns only the active entry. If the master is unchanged, Codex does not need to reread the complete source or repository instructions. If it changed, the helper marks the session stale so Codex can reread and reconcile safely.
+
+When one reply decides several bullets, the helper persists them together with one atomic ledger replacement. Undo reverses that complete user-message batch.
 
 ## Build and validate manually
 
