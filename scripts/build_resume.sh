@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-SOURCE_DIR_ARG="${1:-.}"
+SOURCE_DIR_ARG="${1:-master}"
 SOURCE_NAME="_resume.tex"
 OUTPUT_NAME="Morgan_Le_Resume.pdf"
 SHARED_LATEX_DIR="$REPO_ROOT/shared/latex"
