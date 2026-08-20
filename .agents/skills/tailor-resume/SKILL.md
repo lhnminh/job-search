@@ -38,24 +38,61 @@ Follow source order by default: Education, Relevant Experience, Projects, then o
 
 Within each section, review one complete entry at a time. An entry is one school, employer, project, award group, or comparable unit. Present it in this shape:
 
-```text
-Relevant Experience · Entry 3/5
-Boston Consulting Group (BCG) · Consultant · Jan 2025–Jun 2025
+```markdown
+### Relevant Experience — Entry 3 of 5
 
-1. Current bullet...
-   Recommendation: Rewrite — concise reason
-   Proposed: Suggested replacement...
+**Boston Consulting Group (BCG)** · Consultant · Jan 2025–Jun 2025
 
-2. Current bullet...
-   Recommendation: Keep — concise reason
+*0 of 3 bullets decided · Suggestions are previews only.*
 
-3. Technologies: ...
-   Recommendation: Remove — concise reason
+#### 1. Rewrite recommended
 
-Decisions: 0/3
+*Current wording — from source*
+> Current bullet...
+
+**Suggested wording — not applied**
+> Complete suggested replacement...
+
+*Why this helps:* Concise, job-specific reason.
+
+`1 use suggestion` · `1 keep current` · `1 revise: ...` · `1 remove`
+
+---
+
+#### 2. Keep recommended
+
+*Current wording — from source*
+> Current bullet...
+
+*Why this works:* Concise, job-specific reason.
+
+`2 keep current` · `2 revise: ...` · `2 remove`
+
+---
+
+#### 3. Remove recommended
+
+*Current wording — from source*
+> Technologies: ...
+
+**Suggested action — not applied:** Remove from the tailored version.
+
+*Why:* Concise, job-specific reason.
+
+`3 remove` · `3 keep current` · `3 revise: ...`
 ```
 
 Keep every bullet in the entry visible so the user can compare repetition and coverage. Number bullets locally within the displayed entry.
+
+Use these labels consistently so the state is unambiguous:
+
+- *Current wording — from source* or *Current wording — from `<variant>`* means text that exists now.
+- **Suggested wording — not applied** means a preview awaiting a decision.
+- **Final wording — accepted for tailored version** means the user approved the displayed text.
+- **Removed — accepted for tailored version** means the user approved omitting it from the tailored copy; root remains unchanged.
+- *Fact needed — no suggestion yet* means a factual answer is required before drafting.
+
+Use italics for secondary context: current-wording labels, progress, factual questions, and concise reasons. Use bold for suggested actions and accepted final states. Keep the resume wording itself in ordinary blockquotes so it remains easy to read. Never call text merely “old” or “new.” Never place current and suggested wording in the same paragraph, table cell, quote, or code block. Put current wording above suggested wording and separate them with their own labels. At the top of every newly displayed entry, state that suggestions are unapplied and show the decision count. Once a decision is accepted, replace the suggestion label with **Final wording — accepted for tailored version** or **Removed — accepted for tailored version** on subsequent displays; do not continue to show accepted text as an unapplied suggestion.
 
 For each bullet, recommend exactly one of:
 
@@ -81,10 +118,10 @@ Accept natural instructions, not only slash commands. Understand requests such a
 After a targeted request:
 
 1. Apply it only to the named bullet or entry.
-2. Show the revised bullet and enough surrounding entry context to compare it.
+2. Show the revised bullet and enough surrounding entry context to compare it, using separate current and suggested blocks.
 3. Ask whether to accept it when the instruction did not already clearly authorize acceptance.
 4. Save the decision only after explicit acceptance.
-5. Re-display the entry decision count.
+5. Re-display the entry decision count and label accepted wording as final.
 
 Do not advance to the next entry until every bullet in the current entry has an explicit Keep, Rewrite, or Remove decision. Allow Back and Undo at any time. At a section boundary, summarize what was kept, rewritten, and removed before continuing.
 
