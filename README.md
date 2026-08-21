@@ -10,6 +10,8 @@ This repository turns a comprehensive LaTeX resume into job-specific, one-page A
 master/
   _resume.tex                    Comprehensive resume source
   Morgan_Le_Resume.pdf           Generated comprehensive resume
+product-decision-data-science/   Product and Decision Data Science variant
+quantitative-research-finance/   Quantitative Research and Finance variant
 .agents/skills/tailor-resume/     Repository-local Codex skill, session helper, and validator
 scripts/build_resume.sh           Isolated Tectonic build script
 shared/latex/                     Shared LaTeX classes, styles, and fonts
@@ -119,6 +121,7 @@ The validator checks folder contents, protected historical and contact fields, n
 ## Safety and privacy
 
 - Never invent employers, titles, dates, responsibilities, technologies, metrics, or outcomes.
+- Treat only active, uncommented master-resume content as verified; never use commented-out resume items.
 - Do not change a historical job title merely to match a job posting.
 - Keep at least one substantive bullet for every verified work position in a tailored resume.
 - Require explicit line-level decisions during tailoring and page fitting.

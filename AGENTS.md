@@ -16,6 +16,8 @@ Do not treat these as interchangeable.
 
 `master/_resume.tex` is the canonical content library and source of truth for verified resume facts. Its rendered counterpart is `master/Morgan_Le_Resume.pdf`.
 
+Only active, uncommented resume content is verified as the user's. Commented-out resume entries, bullets, projects, awards, skills, and examples are not the user's claims and must never be activated, proposed, or used in any resume version.
+
 - It should accumulate all verified positions, bullet points, projects, skills, awards, and education details.
 - It may be two or more pages. Do not shorten it merely to meet a one-page resume convention.
 - Do not remove content from it to make a tailored application stronger.
