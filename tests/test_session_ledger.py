@@ -21,6 +21,7 @@ from session_ledger import (  # noqa: E402
     create_session,
     ledger_path,
     list_sessions,
+    project_selection_snapshot,
     session_snapshot,
     undo_last_batch,
 )
@@ -66,6 +67,46 @@ class SessionLedgerTests(unittest.TestCase):
                 [{"entry_number": 1, "bullet_number": 1, "action": "keep"}],
             )
 
+    def test_project_shortlist_returns_all_projects_without_bullet_text(self) -> None:
+        snapshot = project_selection_snapshot(self.repository, "example-role")
+        self.assertEqual("ready", snapshot["status"])
+        self.assertGreaterEqual(len(snapshot["projects"]), 2)
+        self.assertTrue(all(project["project_decision"] is None for project in snapshot["projects"]))
+        self.assertTrue(all("bullets" not in project for project in snapshot["projects"]))
+        self.assertTrue(all(project["bullet_count"] >= 1 for project in snapshot["projects"]))
+
+    def test_project_choices_are_saved_separately_from_bullet_decisions(self) -> None:
+        projects = project_selection_snapshot(self.repository, "example-role")["projects"]
+        included_entry = projects[0]["entry_number"]
+        excluded_entry = projects[1]["entry_number"]
+
+        snapshot = apply_decision_batch(
+            self.repository,
+            "example-role",
+            [],
+            project_decisions=[
+                {"entry_number": included_entry, "action": "include"},
+                {"entry_number": excluded_entry, "action": "exclude"},
+            ],
+            current_entry_number=included_entry,
+        )
+
+        self.assertEqual("include", snapshot["current_entry"]["project_decision"]["action"])
+        self.assertTrue(
+            all(bullet["decision"] is None for bullet in snapshot["current_entry"]["bullets"])
+        )
+        choices = project_selection_snapshot(self.repository, "example-role")["projects"]
+        self.assertEqual("exclude", choices[1]["project_decision"]["action"])
+
+    def test_project_choice_rejects_non_project_entries(self) -> None:
+        with self.assertRaisesRegex(SessionLedgerError, "is not a project"):
+            apply_decision_batch(
+                self.repository,
+                "example-role",
+                [],
+                project_decisions=[{"entry_number": 1, "action": "exclude"}],
+            )
+
     def test_batch_saves_multiple_decisions_with_one_atomic_replace(self) -> None:
         decisions = [
             {"entry_number": 1, "bullet_number": 1, "action": "keep"},
@@ -90,17 +131,26 @@ class SessionLedgerTests(unittest.TestCase):
         self.assertEqual(["Confirmed fact"], snapshot["confirmed_facts"])
 
     def test_undo_reverts_the_complete_batch(self) -> None:
+        project_entry = project_selection_snapshot(self.repository, "example-role")["projects"][0][
+            "entry_number"
+        ]
         apply_decision_batch(
             self.repository,
             "example-role",
             [{"entry_number": 1, "bullet_number": 1, "action": "remove"}],
+            project_decisions=[{"entry_number": project_entry, "action": "include"}],
             confirmed_facts=["Temporary fact"],
         )
         snapshot = undo_last_batch(self.repository, "example-role")
         self.assertIsNone(snapshot["current_entry"]["bullets"][0]["decision"])
         self.assertEqual([], snapshot["confirmed_facts"])
+        projects = project_selection_snapshot(self.repository, "example-role")["projects"]
+        self.assertIsNone(projects[0]["project_decision"])
 
     def test_cli_batches_decisions_and_returns_active_entry(self) -> None:
+        project_entry = project_selection_snapshot(self.repository, "example-role")["projects"][0][
+            "entry_number"
+        ]
         result = subprocess.run(
             [
                 sys.executable,
@@ -114,6 +164,9 @@ class SessionLedgerTests(unittest.TestCase):
                 "1",
                 "keep",
                 "-",
+                "--project-decision",
+                str(project_entry),
+                "include",
                 "--current-entry",
                 "2",
             ],
@@ -124,6 +177,8 @@ class SessionLedgerTests(unittest.TestCase):
         snapshot = json.loads(result.stdout)
         self.assertEqual("ready", snapshot["status"])
         self.assertEqual(2, snapshot["current_entry"]["entry_number"])
+        projects = project_selection_snapshot(self.repository, "example-role")["projects"]
+        self.assertEqual("include", projects[0]["project_decision"]["action"])
 
     def test_session_is_written_under_gitignored_directory(self) -> None:
         expected = self.repository.resolve() / ".resume" / "sessions" / "example-role.json"

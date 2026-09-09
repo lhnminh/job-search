@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Private, evidence-grounded resume tailoring workspace." />
+    <title>Resume Tailoring Workspace</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand" id="brand-home" type="button" aria-label="Resume workspace home">
+          <span class="brand-mark">ML</span>
+          <span>Resume Workspace</span>
+        </button>
+        <nav class="topnav" aria-label="Primary navigation">
+          <button class="nav-item is-active" id="nav-resume" type="button">My resume</button>
+          <button class="nav-item" id="nav-sessions" type="button">Sessions</button>
+          <button class="nav-item" id="nav-settings" type="button">Settings</button>
+        </nav>
+        <span class="privacy-pill"><span></span> Local only</span>
+      </header>
+
+      <main id="master-view" class="workspace">
+        <aside class="section-rail" aria-label="Resume outline">
+          <div class="rail-heading">
+            <p class="eyebrow">Verified source</p>
+            <h1>My resume</h1>
+          </div>
+          <div id="resume-status" class="source-status" aria-live="polite">
+            <span class="status-dot"></span>
+            <span>Loading your resume…</span>
+          </div>
+          <nav id="section-nav" class="section-nav" aria-label="Resume sections"></nav>
+          <div class="rail-note">
+            <span class="lock-icon" aria-hidden="true">↗</span>
+            <p><strong>Your master stays protected.</strong> Tailoring creates a separate version.</p>
+          </div>
+        </aside>
+
+        <section class="document-stage" aria-labelledby="document-title">
+          <div class="document-toolbar">
+            <div>
+              <p class="eyebrow">Master resume</p>
+              <h2 id="document-title">Verified experience</h2>
+            </div>
+            <div class="toolbar-actions">
+              <button id="view-master-pdf" class="button button-quiet" type="button" disabled>View PDF</button>
+              <button id="view-source-details" class="button button-quiet" type="button">Source details</button>
+              <button id="open-tailor" class="button button-primary" type="button">Tailor for a job</button>
+            </div>
+          </div>
+          <div id="master-error" class="error-banner" role="alert" hidden></div>
+          <div id="resume-content" class="resume-paper" aria-live="polite">
+            <div class="resume-skeleton" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+        </section>
+
+        <aside id="tailor-panel" class="tailor-panel" aria-labelledby="tailor-title">
+          <div class="panel-heading">
+            <p class="eyebrow">New tailored version</p>
+            <h2 id="tailor-title">What are you applying for?</h2>
+            <p>Your resume is already loaded. Add the role to prepare grounded suggestions.</p>
+          </div>
+          <form id="job-form">
+            <label>
+              Company
+              <input id="company" name="company" autocomplete="organization" placeholder="e.g. Stripe" required />
+            </label>
+            <label>
+              Role
+              <input id="role" name="role" autocomplete="organization-title" placeholder="e.g. Data Scientist" required />
+            </label>
+            <label>
+              Job link <span class="optional-label">Optional</span>
+              <input id="job-url" name="jobUrl" type="url" autocomplete="url" placeholder="https://…" />
+            </label>
+            <label>
+              Job description
+              <textarea id="job-description" name="jobDescription" rows="11" placeholder="Paste the complete job description" required></textarea>
+            </label>
+            <div class="form-meta">
+              <span>Uses verified resume facts only</span>
+              <span id="description-count">0 characters</span>
+            </div>
+            <div id="job-error" class="panel-error" role="alert" hidden></div>
+            <button class="button button-primary button-full" type="submit">
+              Prepare suggestions <span aria-hidden="true">→</span>
+            </button>
+          </form>
+        </aside>
+      </main>
+
+      <main id="sessions-view" class="sessions-page" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">Saved locally</p><h1>Tailoring sessions</h1></div>
+          <button class="button button-primary" id="sessions-new" type="button">New session</button>
+        </div>
+        <div id="sessions-list" class="sessions-list" aria-live="polite"></div>
+      </main>
+
+      <main id="settings-view" class="settings-page" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">Local configuration</p><h1>Settings</h1></div>
+        </div>
+        <div id="settings-content" class="settings-grid" aria-live="polite">
+          <div class="empty-sessions">Loading settings…</div>
+        </div>
+      </main>
+
+      <main id="review-view" class="review-workspace" hidden>
+        <aside class="review-rail">
+          <button class="back-link" id="review-back" type="button">← My resume</button>
+          <p class="eyebrow">Tailoring for</p>
+          <h1 id="review-role">Role</h1>
+          <p id="review-company" class="review-company">Company</p>
+          <div id="analysis-status" class="source-status"><span class="status-dot"></span><span>Preparing…</span></div>
+          <ol id="stage-list" class="stage-list" aria-label="Tailoring stages">
+            <li data-stage="Job">Job</li>
+            <li data-stage="Preparing suggestions">Suggestions</li>
+            <li data-stage="Page fit">Page fit</li>
+            <li data-stage="Final review">Final review</li>
+            <li data-stage="Exported">Export</li>
+          </ol>
+          <nav id="review-section-nav" class="section-nav" aria-label="Tailored resume sections"></nav>
+          <div class="review-rail-actions">
+            <button id="undo-button" class="button button-quiet" type="button" disabled>Undo last decision</button>
+            <button id="refresh-button" class="button button-quiet" type="button">Check for updates</button>
+          </div>
+        </aside>
+
+        <section class="suggestion-stage" aria-labelledby="suggestion-title">
+          <div class="suggestion-header">
+            <div>
+              <p class="eyebrow">Complete resume review</p>
+              <h2 id="suggestion-title">AI suggestions</h2>
+            </div>
+            <div class="suggestion-header-actions">
+              <button id="toggle-evidence" class="button button-quiet" type="button" aria-expanded="false">Requirements &amp; preview</button>
+              <button id="build-preview" class="button button-quiet" type="button" disabled>Build preview</button>
+            </div>
+          </div>
+          <div id="decision-overview" class="decision-overview" hidden></div>
+          <div id="review-message" class="review-message" aria-live="polite"></div>
+          <div id="suggestion-content" class="suggestion-document"></div>
+        </section>
+
+        <aside class="evidence-panel" id="evidence-panel">
+          <div class="evidence-tabs" role="tablist" aria-label="Review context">
+            <button class="evidence-tab is-active" data-panel="requirements-panel" role="tab" type="button">Requirements</button>
+            <button class="evidence-tab" data-panel="preview-panel" role="tab" type="button">Preview</button>
+          </div>
+          <section id="requirements-panel" class="evidence-content" role="tabpanel">
+            <p class="eyebrow">Job evidence</p>
+            <h2>What the role needs</h2>
+            <div id="requirements-list" class="requirements-list"></div>
+          </section>
+          <section id="preview-panel" class="evidence-content preview-panel" role="tabpanel" hidden>
+            <div class="preview-empty" id="preview-empty">
+              <span class="preview-icon">▧</span>
+              <strong>No tailored preview yet</strong>
+              <p>Build a preview to see accepted decisions in the final document.</p>
+            </div>
+            <iframe id="tailored-pdf-frame" title="Tailored resume PDF preview" hidden></iframe>
+          </section>
+          <div class="export-bar">
+            <p id="export-note">Resolve all suggestions before export.</p>
+            <button id="export-button" class="button button-primary button-full" type="button" disabled>
+              Export tailored resume <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="pdf-dialog" class="pdf-dialog">
+      <div class="dialog-header">
+        <strong>Master resume PDF</strong>
+        <button id="close-pdf" class="icon-button" type="button" aria-label="Close PDF preview">×</button>
+      </div>
+      <iframe id="master-pdf-frame" title="Master resume PDF preview"></iframe>
+    </dialog>
+
+    <dialog id="source-dialog" class="source-dialog">
+      <div class="dialog-header">
+        <strong>Master source details</strong>
+        <button id="close-source" class="icon-button" type="button" aria-label="Close source details">×</button>
+      </div>
+      <div id="source-details" class="source-details"></div>
+    </dialog>
+
+    <dialog id="other-dialog" class="other-dialog">
+      <form method="dialog" id="other-form">
+        <div class="other-heading">
+          <p class="eyebrow">Another direction</p>
+          <h2>Adjust this bullet</h2>
+          <p>Use your own wording, confirm missing context, remove the bullet, or ask AI for a different direction.</p>
+        </div>
+        <label>
+          Final wording
+          <textarea id="other-text" rows="7"></textarea>
+        </label>
+        <label class="fact-field">
+          Confirmed fact or metric <span>Only needed when the suggestion asks for missing context</span>
+          <input id="other-fact" type="text" placeholder="State the fact you are confirming" />
+        </label>
+        <label>
+          Direction for another suggestion <span>Only needed when requesting a new suggestion</span>
+          <input id="other-instruction" type="text" placeholder="For example: Make it shorter and emphasize forecasting" />
+        </label>
+        <div id="other-error" class="error-banner" role="alert" hidden></div>
+        <div class="dialog-actions">
+          <button class="button button-quiet" value="cancel" type="submit">Cancel</button>
+          <button class="button button-danger" id="other-remove" value="remove" type="submit">Remove bullet</button>
+          <button class="button button-quiet" id="other-request" value="request" type="submit">Request another suggestion</button>
+          <button class="button button-primary" id="other-use" value="rewrite" type="submit">Use this wording</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

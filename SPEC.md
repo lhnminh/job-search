@@ -34,18 +34,19 @@ The user invokes `$tailor-resume` and pastes a job description in the Codex conv
 1. Uses the active repository-aware Codex conversation; it does not start a nested Codex thread.
 2. For a new session, reads the complete master resume and job description without changing the source.
 3. Creates a gitignored decision ledger containing parsed source-order entries and a master hash for resumability.
-4. Walks through the resume section by section and entry by entry: each education item, job, and project is shown with all of its numbered bullets and Codex recommendations together. The contact header is excluded, while entry headers are locked context.
-5. Lets the user point to a specific bullet within the visible entry using natural language, such as “rewrite line 2 with more finance emphasis,” without losing the surrounding job context.
-6. Requires an explicit decision for every bullet before moving to the next entry. The user may accept, keep, remove, regenerate, rework, accept all, keep all, go back, undo, or quit.
-7. Saves every explicit decision before replying. Decisions made in one user message are written together in one atomic batch.
-8. Suggests a descriptive folder slug and requires confirmation before creating or overwriting a folder.
-9. Builds temporary previews only after every entry has been reviewed.
-10. If the draft exceeds one page, enters an interactive page-fit pass. It presents low-relevance or metadata lines one at a time and requires the user to keep, remove, or approve a shorter rewrite. The tool never deletes or rewrites a line automatically.
-11. Runs the deterministic validator against verified master facts, historical titles, PDF structure, and the one-substantive-bullet minimum for every work position.
-12. Audits every proposed claim against the master source and explicit user confirmations.
-13. Shows a final diff and requires confirmation before writing the tailored folder.
-14. Builds and verifies exactly one A4 page, extractable text, and hyperlinks.
-15. Renders the final PDF and visually rejects clipping, overlap, broken glyphs, awkward page breaks, or orphaned headings.
+4. Walks through Education and Relevant Experience entry by entry. Every education item and verified job is shown with all of its numbered bullets and Codex recommendations together. All work positions remain represented; the contact header is excluded, while entry headers are locked context.
+5. Before project bullet review, shows a single shortlist containing every verified project, gives one job-specific Include or Exclude recommendation per project, and requires an explicit selection for each. Only included projects proceed to bullet review; excluding a project is an explicit entry-level removal from the tailored version.
+6. Lets the user point to a specific bullet within the visible entry using natural language, such as “rewrite line 2 with more finance emphasis,” without losing the surrounding job context.
+7. Requires an explicit decision for every bullet in each mandatory or included entry before moving on. The user may accept, keep, remove, regenerate, rework, accept all, keep all, go back, undo, or quit.
+8. Saves every explicit bullet and project-selection decision before replying. Decisions made in one user message are written together in one atomic batch.
+9. Suggests a descriptive folder slug and requires confirmation before creating or overwriting a folder.
+10. Builds temporary previews only after every mandatory entry and included project has been reviewed.
+11. If the draft exceeds one page, enters an interactive page-fit pass. It presents low-relevance or metadata lines one at a time and requires the user to keep, remove, or approve a shorter rewrite. The tool never deletes or rewrites a line automatically.
+12. Runs the deterministic validator against verified master facts, historical titles, PDF structure, and the one-substantive-bullet minimum for every work position.
+13. Audits every proposed claim against the master source and explicit user confirmations.
+14. Shows a final diff and requires confirmation before writing the tailored folder.
+15. Builds and verifies exactly one A4 page, extractable text, and hyperlinks.
+16. Renders the final PDF and visually rejects clipping, overlap, broken glyphs, awkward page breaks, or orphaned headings.
 
 There is no non-interactive acceptance shortcut because it would bypass the required entry review and bullet decisions.
 
@@ -78,7 +79,7 @@ For master review, accepting revised wording appends it beside the existing bull
 ## Sessions
 
 - Interactive state is stored under `.resume/sessions/`, which is gitignored.
-- A skill session ledger records the target, master hash, job description, current section and entry, accepted bullet decisions, and confirmed facts.
+- A skill session ledger records the target, master hash, job description, current section and entry, explicit project selections, accepted bullet decisions, and confirmed facts.
 - A continuing session verifies the current master hash and, when it matches, loads only the active entry instead of rereading the full master and repository instructions.
 - A hash mismatch marks the session stale and requires a complete master reread and reconciliation before any further decision is saved.
 - The active Codex task and ledger provide conversational continuity.

@@ -16,9 +16,10 @@ from typing import Any
 from resume_validation import MASTER_SOURCE_RELATIVE_PATH, parse_resume, tex_to_text
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SESSION_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,79}$")
 DECISION_ACTIONS = {"keep", "rewrite", "remove", "clear"}
+PROJECT_DECISION_ACTIONS = {"include", "exclude", "clear"}
 
 
 class SessionLedgerError(ValueError):
@@ -82,26 +83,31 @@ def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
 def _entry_payload(source: str) -> list[dict[str, Any]]:
     entries = []
     for entry_number, entry in enumerate(parse_resume(source), start=1):
-        entries.append(
-            {
-                "entry_number": entry_number,
-                "section": entry.section,
-                "title": entry.title,
-                "subtitle": entry.subtitle,
-                "date": entry.date,
-                "bullets": [
-                    {
-                        "bullet_number": bullet_number,
-                        "source_latex": bullet.text,
-                        "source_text": tex_to_text(bullet.text),
-                        "is_metadata": bullet.is_metadata,
-                        "decision": None,
-                    }
-                    for bullet_number, bullet in enumerate(entry.bullets, start=1)
-                ],
-            }
-        )
+        payload = {
+            "entry_number": entry_number,
+            "section": entry.section,
+            "title": entry.title,
+            "subtitle": entry.subtitle,
+            "date": entry.date,
+            "bullets": [
+                {
+                    "bullet_number": bullet_number,
+                    "source_latex": bullet.text,
+                    "source_text": tex_to_text(bullet.text),
+                    "is_metadata": bullet.is_metadata,
+                    "decision": None,
+                }
+                for bullet_number, bullet in enumerate(entry.bullets, start=1)
+            ],
+        }
+        if _is_project_entry(payload):
+            payload["project_decision"] = None
+        entries.append(payload)
     return entries
+
+
+def _is_project_entry(entry: dict[str, Any]) -> bool:
+    return "project" in str(entry["section"]).casefold()
 
 
 def create_session(
@@ -161,7 +167,7 @@ def _master_status(repository: Path, payload: dict[str, Any]) -> tuple[str, str]
 
 
 def _compact_entry(entry: dict[str, Any]) -> dict[str, Any]:
-    return {
+    compact = {
         "entry_number": entry["entry_number"],
         "section": entry["section"],
         "title": entry["title"],
@@ -176,6 +182,20 @@ def _compact_entry(entry: dict[str, Any]) -> dict[str, Any]:
             }
             for bullet in entry["bullets"]
         ],
+    }
+    if _is_project_entry(entry):
+        compact["project_decision"] = entry["project_decision"]
+    return compact
+
+
+def _compact_project(entry: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "entry_number": entry["entry_number"],
+        "title": entry["title"],
+        "subtitle": entry["subtitle"],
+        "date": entry["date"],
+        "bullet_count": len(entry["bullets"]),
+        "project_decision": entry["project_decision"],
     }
 
 
@@ -226,11 +246,36 @@ def session_snapshot(
     )
 
 
+def project_selection_snapshot(repository: Path, session_id: str) -> dict[str, Any]:
+    """Return every project together for the explicit shortlist step."""
+    _, payload = _load_session(repository, session_id)
+    status, current_hash = _master_status(repository, payload)
+    if status == "stale":
+        return {
+            "status": "stale",
+            "session_id": session_id,
+            "expected_master_sha256": payload["master"]["sha256"],
+            "current_master_sha256": current_hash,
+            "message": "Master resume changed; reread it and reconcile the session before continuing.",
+        }
+    return {
+        "status": "ready",
+        "session_id": session_id,
+        "target_slug": payload["target_slug"],
+        "master_sha256": current_hash,
+        "projects": [
+            _compact_project(entry) for entry in payload["entries"] if _is_project_entry(entry)
+        ],
+        "updated_at": payload["updated_at"],
+    }
+
+
 def apply_decision_batch(
     repository: Path,
     session_id: str,
     decisions: list[dict[str, Any]],
     *,
+    project_decisions: list[dict[str, Any]] | None = None,
     current_entry_number: int | None = None,
     confirmed_facts: list[str] | None = None,
 ) -> dict[str, Any]:
@@ -288,6 +333,29 @@ def apply_decision_batch(
             }
         )
 
+    project_changes = []
+    for requested in project_decisions or []:
+        entry_number = int(requested["entry_number"])
+        action = str(requested["action"]).lower()
+        if action not in PROJECT_DECISION_ACTIONS:
+            raise SessionLedgerError(f"Unsupported project decision action: {action}")
+        if not 1 <= entry_number <= len(payload["entries"]):
+            raise SessionLedgerError(f"Entry number is out of range: {entry_number}")
+        entry = payload["entries"][entry_number - 1]
+        if not _is_project_entry(entry):
+            raise SessionLedgerError(f"Entry {entry_number} is not a project")
+
+        before = copy.deepcopy(entry["project_decision"])
+        after = None if action == "clear" else {"action": action, "decided_at": _now()}
+        entry["project_decision"] = after
+        project_changes.append(
+            {
+                "entry_number": entry_number,
+                "before": before,
+                "after": copy.deepcopy(after),
+            }
+        )
+
     previous_entry_number = payload["current_entry_number"]
     if current_entry_number is not None:
         if not 1 <= current_entry_number <= len(payload["entries"]):
@@ -301,7 +369,7 @@ def apply_decision_batch(
             payload["confirmed_facts"].append(normalized)
             added_facts.append(normalized)
 
-    if not changes and not added_facts and current_entry_number is None:
+    if not changes and not project_changes and not added_facts and current_entry_number is None:
         raise SessionLedgerError("The batch does not contain any changes")
 
     saved_at = _now()
@@ -311,6 +379,7 @@ def apply_decision_batch(
             "previous_entry_number": previous_entry_number,
             "current_entry_number": payload["current_entry_number"],
             "decisions": changes,
+            "project_decisions": project_changes,
             "confirmed_facts_added": added_facts,
         }
     )
@@ -329,6 +398,9 @@ def undo_last_batch(repository: Path, session_id: str) -> dict[str, Any]:
         raise SessionLedgerError("There is no saved batch to undo")
 
     batch = payload["batches"].pop()
+    for change in reversed(batch.get("project_decisions", [])):
+        entry = payload["entries"][change["entry_number"] - 1]
+        entry["project_decision"] = change["before"]
     for change in reversed(batch["decisions"]):
         entry = payload["entries"][change["entry_number"] - 1]
         entry["bullets"][change["bullet_number"] - 1]["decision"] = change["before"]
@@ -393,6 +465,9 @@ def _build_parser() -> argparse.ArgumentParser:
     show.add_argument("session_id")
     show.add_argument("--include-job-description", action="store_true")
 
+    projects = subparsers.add_parser("projects", help="Return the complete project shortlist")
+    projects.add_argument("session_id")
+
     update = subparsers.add_parser("update", help="Atomically save one user-message batch")
     update.add_argument("session_id")
     update.add_argument(
@@ -400,6 +475,13 @@ def _build_parser() -> argparse.ArgumentParser:
         action="append",
         nargs=4,
         metavar=("ENTRY", "BULLET", "ACTION", "TEXT_OR_DASH"),
+        default=[],
+    )
+    update.add_argument(
+        "--project-decision",
+        action="append",
+        nargs=2,
+        metavar=("ENTRY", "ACTION"),
         default=[],
     )
     update.add_argument("--current-entry", type=int)
@@ -425,6 +507,8 @@ def main() -> int:
                 args.session_id,
                 include_job_description=args.include_job_description,
             )
+        elif args.command == "projects":
+            output = project_selection_snapshot(args.repository, args.session_id)
         elif args.command == "update":
             decisions = [
                 {
@@ -435,10 +519,15 @@ def main() -> int:
                 }
                 for entry, bullet, action, text in args.decision
             ]
+            project_decisions = [
+                {"entry_number": int(entry), "action": action}
+                for entry, action in args.project_decision
+            ]
             output = apply_decision_batch(
                 args.repository,
                 args.session_id,
                 decisions,
+                project_decisions=project_decisions,
                 current_entry_number=args.current_entry,
                 confirmed_facts=args.confirmed_fact,
             )

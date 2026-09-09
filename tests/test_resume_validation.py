@@ -26,8 +26,8 @@ class ResumeValidationTests(unittest.TestCase):
 
     def test_parses_reference_entries(self) -> None:
         entries = parse_resume(self.source)
-        self.assertEqual(9, len(entries))
-        self.assertEqual(25, sum(len(entry.bullets) for entry in entries))
+        self.assertEqual(11, len(entries))
+        self.assertEqual(31, sum(len(entry.bullets) for entry in entries))
 
     def test_rejects_changed_historical_title(self) -> None:
         changed = self.source.replace(
@@ -37,6 +37,15 @@ class ResumeValidationTests(unittest.TestCase):
         )
         errors = validate_tailored_tex(self.source, changed)
         self.assertTrue(any("Historical title changed" in error for error in errors))
+
+    def test_rejects_old_mobile_number(self) -> None:
+        changed = self.source.replace(
+            "\\mobile{+1 347 774 6979}",
+            "\\mobile{(+84)93 658-5869}",
+            1,
+        )
+        errors = validate_tailored_tex(self.source, changed)
+        self.assertIn("Contact field changed or is missing: \\mobile", errors)
 
     def test_rejects_unverified_numeric_claim(self) -> None:
         changed = self.source.replace("data-driven analyses", "\\$999M of data-driven analyses", 1)
@@ -53,6 +62,17 @@ class ResumeValidationTests(unittest.TestCase):
         changed = self.source[:peloton_start] + self.source[samsung_start:]
         errors = validate_tailored_completeness(self.source, changed)
         self.assertIn("Missing experience entry: Peloton", errors)
+
+    def test_allows_an_explicitly_excluded_project(self) -> None:
+        housing_start = self.source.index(
+            "{\\customcventry{\\href{https://github.com/lhnminh/Kaggle-Housing-Prices-Comp}{Housing Prices Competition}}"
+        )
+        axiom_start = self.source.index(
+            "{\\customcventry{\\href{https://github.com/lhnminh/axiom}{Axiom}}"
+        )
+        changed = self.source[:housing_start] + self.source[axiom_start:]
+        errors = validate_tailored_completeness(self.source, changed)
+        self.assertEqual([], errors)
 
     def test_rejects_target_outside_repository(self) -> None:
         with self.assertRaises(ResumeValidationError):

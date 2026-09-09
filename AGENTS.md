@@ -34,11 +34,12 @@ The repo-specific `tailor-resume` skill is the interactive workflow. It follows 
 - A tailored proposal is appended to the master only after the user explicitly selects `/source`.
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
 - Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat, terminal chat interface, or require a separate API key.
-- A new tailoring session must begin from a complete copy of `master/_resume.tex` and review the resume section by section, then entry by entry. Each education item, job, and project is shown with all of its numbered bullets together, and every bullet requires an explicit decision. The contact header is excluded.
+- The local Resume Workspace may present that same workflow visually. Its state belongs under the gitignored `.resume/webapp/` directory, and AI suggestions must still come from the active Codex conversation through the workspace bridge or registered WebMCP tools. The web server must not start a nested model session.
+- A new tailoring session must begin from a complete copy of `master/_resume.tex` and review the resume section by section, then entry by entry. Each education item and job is shown with all of its numbered bullets together, and every bullet requires an explicit decision. Before reviewing project bullets, show one complete project shortlist and require an explicit Include or Exclude decision for every project. Only included projects proceed to entry-level bullet review; excluded projects are removed from the tailored version by that project-level decision. The contact header is excluded.
 - A continuing session may use the bundled ledger helper to verify the saved master hash and load only the active entry. When the hash matches, do not reread `AGENTS.md`, the full master, or a job description already present in conversation context. A mismatch makes the session stale and requires a complete master reread and reconciliation before continuing.
 - Employer, historical title, and date lines are locked context in the interactive session.
-- Tailoring must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit line-level user decision.
-- Session state must include every bullet decision before Codex replies. When one user message decides multiple bullets, persist all of those decisions together in one atomic batch rather than performing separate ledger writes.
+- Tailoring must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit bullet-level decision, except that an explicit project-level Exclude decision removes that complete project from the tailored version.
+- Session state must include every explicit bullet and project-selection decision before Codex replies. When one user message decides multiple items, persist all of those decisions together in one atomic batch rather than performing separate ledger writes.
 
 These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill is applying a change.
 
@@ -82,6 +83,7 @@ Tailored versions are selective snapshots. They do not replace the reference and
 - Flag material eligibility mismatches to the user, but do not alter truthful education or employment facts to hide them.
 - Every tailored version must be exactly one A4 page. This is a hard submission rule, not a per-job preference.
 - Preserve every verified work position with at least one substantive bullet. Allocate additional bullets to the roles most relevant to the job description, and consolidate repeated technology lists before removing a position.
+- Treat work experience as mandatory coverage and projects as a selective portfolio. Never drop a work position through the project-selection workflow.
 - Resume variants created by the interactive skill must be exactly one A4 page.
 
 ## Projects Are Additive
@@ -154,3 +156,4 @@ Follow this sequence and explain changes step by step:
 - Interactive skill sessions belong under the gitignored `.resume/sessions/` directory.
 - Use `uv run python -m unittest discover -v` for the validator test suite.
 - Use the repo-specific `$tailor-resume` skill for the primary conversational workflow. After building, run `uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "<target-folder>"` before visual PDF QA.
+- Start the local Resume Workspace with `./scripts/run_resume_app.sh`. It must bind to a loopback address by default and preserve the same master-source, explicit-decision, one-page, validation, and visual-QA rules as the conversational workflow.
