@@ -52,9 +52,20 @@ def main() -> int:
         errors.append(f"Tailored source not found: {source_path}")
     if not pdf_path.is_file():
         errors.append(f"Tailored PDF not found: {pdf_path}")
-    allowed_files = {"_resume.tex", "Morgan_Le_Resume.pdf"}
+    allowed_files = {
+        "_resume.tex",
+        "Morgan_Le_Resume.pdf",
+        "resume.md",
+        "cover_letter.md",
+        "job_description.txt",
+        "Morgan_Le_Cover_Letter.pdf",
+    }
     if target_directory.is_dir():
-        extras = sorted(path.name for path in target_directory.iterdir() if path.name not in allowed_files)
+        extras = sorted(
+            path.name
+            for path in target_directory.iterdir()
+            if path.name not in allowed_files and not path.name.startswith(".")
+        )
         if extras:
             errors.append("Unexpected files in tailored folder: " + ", ".join(extras))
 

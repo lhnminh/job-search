@@ -1,0 +1,150 @@
+\documentclass[a4paper,10pt]{article}
+
+% Force traditional Type 1 fonts for compatibility with legacy resume parsers.
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\usepackage[
+  top=0.55in,
+  bottom=0.5in,
+  left=0.5in,
+  right=0.5in
+]{geometry}
+
+\usepackage{titlesec}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-5pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
+
+\newcommand{\resumeItem}[1]{
+  \item\small{{#1 \vspace{-2pt}}}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \small\textbf{#1} & \small #2 \\
+      \textit{\small #3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+  \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small #1 & \small #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in,label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.22in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+\begin{center}
+  \textbf{\Huge \scshape Morgan Le} \\ \vspace{2pt}
+  \small (347) 774 6979 $|$
+  \href{mailto:morgan.hn.le@gmail.com}{\underline{morgan.hn.le@gmail.com}} $|$
+  \href{https://www.linkedin.com/in/morganhle/}{\underline{linkedin.com/in/morganhle}} $|$
+  \href{https://github.com/lhnminh}{\underline{github.com/lhnminh}} $|$
+  \href{https://lhnminh.github.io/}{\underline{lhnminh.github.io}}
+\end{center}
+
+\section{Education}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {Columbia University}{Aug 2026 -- Dec 2027}
+    {Master's in Data Science}{}
+  \resumeSubheading
+    {University of Rochester}{Aug 2019 -- May 2023}
+    {Bachelor in Information Systems \& Economics; Minor in Computer Science}{}
+    \resumeItemListStart
+      \resumeItem{\textbf{GPA:} 3.8/4.0}
+      \resumeItem{\textbf{Relevant Coursework:} Predictive Analysis, Econometrics, Database System, Advanced Algorithms}
+    \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\section{Relevant Experience}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {\href{https://en.vnu.edu.vn/}{Vietnam National University}}{Jun 2026 -- Aug 2026}
+    {Research Assistant}{}
+    \resumeItemListStart
+      \resumeItem{Implemented and fine-tuned PyTorch deep learning models, benchmarking predictive performance on Vietnam-scale datasets against established baselines.}
+      \resumeItem{Integrated a Geographical Random Forest model into a research pipeline and built Python preprocessing workflows for geospatial feature engineering, training, and evaluation.}
+      \resumeItem{\textbf{Technologies:} Python, MLflow, PyTorch, GeoPandas, QGIS.}
+    \resumeItemListEnd
+  \resumeSubheading
+    {\href{https://www.sea.com/products/shopee}{Shopee}}{Jun 2025 -- Jun 2026}
+    {Product Operations and Analytics Associate}{}
+    \resumeItemListStart
+      \resumeItem{Analyzed seller performance, campaign effectiveness, and regional sales trends to generate actionable insights for promotional strategies that contributed to over \$100K in revenue and 25\% YoY growth.}
+      \resumeItem{Engineered automated pipelines that consolidated multi-source sales and P\&L data, reducing manual processing time by 20\%.}
+      \resumeItem{Coordinated day-to-day service delivery across a regional team of 10+ internal personnel and BPO partners, overseeing workflow execution and performance monitoring to maintain operational efficiency and service quality.}
+      \resumeItem{\textbf{Technologies:} Python, SQL, Looker, Google Apps Script.}
+    \resumeItemListEnd
+  \resumeSubheading
+    {\href{https://www.bcg.com/about/overview}{Boston Consulting Group (BCG)}}{Jan 2025 -- Jun 2025}
+    {Consultant}{}
+    \resumeItemListStart
+      \resumeItem{Partnered with cross-functional client teams to translate business problems into data-driven analyses supporting go-to-market strategy for a \$10B infrastructure initiative.}
+      \resumeItem{Built pricing, market-sizing, and financial models to evaluate commercial opportunities and inform executive strategy decisions.}
+      \resumeItem{\textbf{Technologies:} pandas, SQL, Excel.}
+    \resumeItemListEnd
+  \resumeSubheading
+    {\href{https://www.onepeloton.com/company}{Peloton}}{Dec 2023 -- Jun 2024}
+    {Business Operations Analyst II}{}
+    \resumeItemListStart
+      \resumeItem{Applied spend analytics across IT, Professional Services, and CapEx procurement initiatives, negotiating supplier terms to achieve \$800K in annual savings and identify \$2M in revenue opportunities.}
+      \resumeItem{Designed and implemented Looker BI dashboards that helped business unit leaders identify \$10M in savings.}
+      \resumeItem{\textbf{Technologies:} Python, BigQuery, Looker, Coupa, pandas.}
+    \resumeItemListEnd
+  \resumeSubheading
+    {\href{https://www.samsung.com/us/about-us/our-business/}{Samsung Electronics America}}{May 2023 -- Dec 2023}
+    {Supply Chain Data Ops Analyst}{}
+    \resumeItemListStart
+      \resumeItem{Automated purchase-order tracking and reporting for procurement operations supporting over \$1M in daily purchasing volume across 100+ global material supply chains.}
+      \resumeItem{Increased analyst productivity by 10\% by optimizing analytical tools and automating data-processing workflows.}
+      \resumeItem{\textbf{Technologies:} Python, SQL, SAP.}
+    \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\section{Projects}
+\resumeSubHeadingListStart
+  \resumeProjectHeading
+    {\textbf{\href{https://github.com/lhnminh/Kaggle-Housing-Prices-Comp}{Housing Prices Competition}} $|$ \emph{Kaggle Competition}}{Rank 403/5425 (Top 8\%)}
+    \resumeItemListStart
+      \resumeItem{Built an end-to-end machine learning workflow for housing-price prediction, spanning data cleaning, feature selection, model training, and batch inference.}
+      \resumeItem{Built a reusable preprocessing pipeline that handled missing values and categorical features consistently across training and inference.}
+      \resumeItem{\textbf{Technologies:} Python, scikit-learn, XGBoost.}
+    \resumeItemListEnd
+  \resumeProjectHeading
+    {\textbf{\href{https://github.com/lhnminh/dwellwise}{Dwellwise}} $|$ \emph{Agent-Ready Apartment Planner}}{Aug 2026}
+    \resumeItemListStart
+      \resumeItem{Built a full-stack apartment-planning product with dimensioned 2D editing, furniture fit and collision checks, and a synchronized 3D sunlight preview.}
+      \resumeItem{Integrated WebMCP tools with validated application commands, revision checks, and human confirmation for destructive agent actions.}
+      \resumeItem{\textbf{Technologies:} PostgreSQL, TypeScript, Next.js, React, Three.js, WebMCP.}
+    \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\end{document}

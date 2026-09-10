@@ -2,10 +2,8 @@
 tmp/
 .resume/
 
-# Generated resume artifacts
-/*/_resume.tex
-!/master/_resume.tex
-/*/Morgan_Le_Resume.pdf
+# Master rendered PDF (build artifact)
+/master/Morgan_Le_Resume.pdf
 
 # Python environments and caches
 .venv/

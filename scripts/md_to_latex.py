@@ -531,17 +531,19 @@ RENDERERS = {
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-i", "--input", type=Path, default=Path("master/resume.md"), help="Path to markdown resume")
+    parser.add_argument("input_pos", nargs="?", type=Path, help="Path to markdown resume (positional)")
+    parser.add_argument("-i", "--input", type=Path, help="Path to markdown resume (flag)")
     parser.add_argument("-t", "--template", choices=["jake", "vmock", "loc"], default="jake", help="Target template")
     parser.add_argument("-o", "--output", type=Path, help="Output .tex path")
     parser.add_argument("-b", "--build", action="store_true", help="Build PDF using build_resume.sh")
     args = parser.parse_args()
 
-    if not args.input.is_file():
-        print(f"Error: Input file {args.input} does not exist.", file=sys.stderr)
+    input_file = args.input or args.input_pos or Path("master/resume.md")
+    if not input_file.is_file():
+        print(f"Error: Input file {input_file} does not exist.", file=sys.stderr)
         return 1
 
-    content = args.input.read_text(encoding="utf-8")
+    content = input_file.read_text(encoding="utf-8")
     resume = parse_md_resume(content)
     renderer = RENDERERS[args.template.lower()]
     latex_output = renderer(resume)
@@ -549,8 +551,10 @@ def main() -> int:
     output_path = args.output
     if output_path is None:
         if args.build:
-            # Default to a temporary or designated build folder
-            output_path = Path("tmp/build_md") / "_resume.tex"
+            if input_file.parent != Path("."):
+                output_path = input_file.parent / "_resume.tex"
+            else:
+                output_path = Path("tmp/build_md") / "_resume.tex"
         else:
             sys.stdout.write(latex_output)
             return 0

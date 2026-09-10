@@ -4,53 +4,63 @@ This repository turns a comprehensive LaTeX resume into job-specific, one-page A
 
 [`master/_resume.tex`](master/_resume.tex) is the verified source of truth. During tailoring, Codex reviews every education item and work role, then asks you to choose which projects belong before reviewing the selected projects' bullets. It does not invent facts or silently remove content to make a resume fit.
 
-## Repository structure
+### Repository structure
 
 ```text
-cover-letter/                    Editable cover letters and rendered PDFs
+applications/                   Tailored job applications (e.g. applications/<company-role>/)
+  <company-role>/
+    resume.md                   Tailored Markdown resume
+    cover_letter.md             Optional tailored cover letter
+    Morgan_Le_Resume.pdf        Compiled 1-page A4 PDF
 master/
-  _resume.tex                    Comprehensive resume source
-  Morgan_Le_Resume.pdf           Generated comprehensive resume
+  resume.md                     Canonical Markdown resume (source of truth)
+  _resume.tex                   Comprehensive LaTeX resume
+  Morgan_Le_Resume.pdf          Generated comprehensive resume
 pre-made/
   <purpose>/
-    resume.md                     Curated format-neutral resume content
-    _resume.tex                   Standalone compiled Jake LaTeX source
-    Morgan_Le_Resume.pdf          Built 1-page A4 PDF
+    resume.md                   Curated format-neutral resume content
+    cover_letter.md             Base cover letter template for this domain track
+    _resume.tex                 Standalone compiled Jake LaTeX source
+    Morgan_Le_Resume.pdf        Built 1-page A4 PDF
 templates/
-  Jake/                           Canonical original Jake source template
-  Vmock/                          Compact 10pt Jake/Vmock source template
-  Loc/                            Canonical moderncv source template
-.agents/skills/tailor-resume/     Repository-local Codex skill, session helper, and validator
-scripts/build_resume.sh           Isolated Tectonic and PDF-compatibility build script
-scripts/md_to_latex.py            Markdown-to-LaTeX compiler for Jake, Vmock, and Loc
-scripts/normalize_pdf.py          Conservative PDF 1.5 normalization and integrity checks
-scripts/run_resume_app.sh         One-command local web-app launcher
-shared/latex/                     Shared LaTeX classes and fonts
-webapp/                           Local resume workspace service and interface
-AGENTS.md                         Repository rules for Codex
-SPEC.md                           Detailed workflow contract
-pyproject.toml and uv.lock        Validator dependencies
+  Jake/                         Canonical original Jake source template (11pt)
+  Vmock/                        Compact 10pt Jake/Vmock source template
+  Loc/                          Canonical moderncv source template
+.agents/skills/tailor-resume/   Repository-local skill, session helper, and validator
+scripts/build_resume.sh         Isolated Tectonic and PDF-compatibility build script
+scripts/md_to_latex.py          Markdown-to-LaTeX compiler for Jake, Vmock, and Loc
+scripts/diff_resume.py          Structured CLI diff viewer for comparing resumes
+scripts/normalize_pdf.py        Conservative PDF 1.5 normalization and integrity checks
+scripts/run_resume_app.sh       One-command local web-app launcher
+shared/latex/                   Shared LaTeX classes and fonts
+webapp/                         Local resume workspace service and interface
+AGENTS.md                       Repository rules for Codex and Antigravity
+SPEC.md                         Detailed workflow contract
+pyproject.toml and uv.lock      Validator dependencies
 ```
 
-Job-specific resume folders and session data are disposable local artifacts ignored by Git. `master/_resume.tex` remains the canonical resume history; `pre-made/` contains reusable general-purpose variants.
+`master/` remains the canonical resume history; `pre-made/` contains reusable general-purpose variants across 5 tracks:
+- `finance-consulting`
+- `forward-deployed-engineer`
+- `product-decision-data-science`
+- `quantitative-research-finance`
+- `software-data-engineering`
 
-Each reusable premade contains its `resume.md` content source, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Vmock`, `Loc`).
+Each reusable premade contains its `resume.md` content source, domain `cover_letter.md`, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Vmock`, `Loc`).
 
-To render a Markdown resume into one of the supported LaTeX formats, run:
+To render and build a Markdown resume into one of the supported LaTeX formats:
 
 ```bash
-uv run python scripts/md_to_latex.py --input pre-made/<purpose>/resume.md --template jake --output /tmp/<purpose>/_resume.tex
+uv run python scripts/md_to_latex.py applications/<company-role>/resume.md --template jake --build
 ```
 
-Supported template names are `jake`, `loc`, and `vmock`. The converter does not overwrite an active format leaf unless an output path there is explicitly supplied.
+Supported template names are `jake` (11pt default), `vmock` (compact 10pt), and `loc`.
 
-## Cover letters
+To compare two resume versions and see a colorized diff:
 
-The AQR Arbitrage 2027 Research Summer Analyst letter is saved in `cover-letter/aqr-arbitrage-research-summer-analyst-2027/` as editable Markdown and a one-page PDF. It preserves the consulting template's experience narrative and adapts the opening and closing to investment research, with compact signature spacing.
-
-The BNP Paribas 2027 Summer Analyst Internship - Corporate Functions, Operations letter is saved in `cover-letter/bnp-paribas-corporate-functions-operations-intern-2027/` as editable Markdown and a one-page PDF. It adapts the consulting template toward operations, client service, and continuous improvement, with compact signature spacing.
-
-The West Monroe 2027 Data & Analytics Consulting Intern letter is saved in `cover-letter/west-monroe-data-analytics-consulting-intern-2027/` as editable Markdown and a one-page PDF. It follows the general consulting letter's narrative style, with content tailored to the New York role. The original consulting letter remains in `cover-letter/consulting/`.
+```bash
+uv run python scripts/diff_resume.py pre-made/<track> applications/<company-role>
+```
 
 ## Requirements
 
