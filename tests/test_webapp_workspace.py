@@ -22,7 +22,7 @@ class WorkspaceStoreTests(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.repository = Path(self.temporary_directory.name)
         (self.repository / "master").mkdir()
-        shutil.copy(REPOSITORY_ROOT / "master" / "_resume.tex", self.repository / "master")
+        shutil.copy(REPOSITORY_ROOT / "master" / "resume.md", self.repository / "master")
         self.store = WorkspaceStore(self.repository)
         self.session = self.store.create_session(
             company="Example Company",
@@ -258,8 +258,8 @@ class WorkspaceStoreTests(unittest.TestCase):
             self.store.assemble_source(session["session_id"], require_complete=True)
 
     def test_master_change_marks_session_stale(self) -> None:
-        master = self.repository / "master" / "_resume.tex"
-        master.write_text(master.read_text(encoding="utf-8") + "\n% changed\n", encoding="utf-8")
+        master = self.repository / "master" / "resume.md"
+        master.write_text(master.read_text(encoding="utf-8") + "\n<!-- changed -->\n", encoding="utf-8")
         session = self.store.get_session(self.session["session_id"])
         self.assertEqual("stale", session["status"])
         with self.assertRaisesRegex(WorkspaceError, "changed"):
@@ -267,8 +267,8 @@ class WorkspaceStoreTests(unittest.TestCase):
 
     def test_reconcile_restarts_from_the_changed_master(self) -> None:
         session = self._save_analysis()
-        master = self.repository / "master" / "_resume.tex"
-        master.write_text(master.read_text(encoding="utf-8") + "\n% verified update\n", encoding="utf-8")
+        master = self.repository / "master" / "resume.md"
+        master.write_text(master.read_text(encoding="utf-8") + "\n<!-- verified update -->\n", encoding="utf-8")
         reconciled = self.store.reconcile_session(session["session_id"])
         self.assertEqual("ready", reconciled["status"])
         self.assertIsNone(reconciled["suggestions"])

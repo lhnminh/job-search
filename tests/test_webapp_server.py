@@ -72,7 +72,7 @@ class ResumeAppHttpTests(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.repository = Path(self.temporary_directory.name)
         (self.repository / "master").mkdir()
-        shutil.copy(REPOSITORY_ROOT / "master" / "_resume.tex", self.repository / "master")
+        shutil.copy(REPOSITORY_ROOT / "master" / "resume.md", self.repository / "master")
 
         class TemporaryResumeAppHandler(ResumeAppHandler):
             store = WorkspaceStore(self.repository)

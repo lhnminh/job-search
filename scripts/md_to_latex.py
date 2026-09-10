@@ -483,6 +483,7 @@ def render_loc(resume: MdResume) -> str:
     if resume.website[0]:
         url = resume.website[1] or f"https://{resume.website[0]}"
         header_lines.append(f"\\title{{\\href{{{url}}}{{{resume.website[0]}}}}}")
+        header_lines.append(f"\\homepage{{{url}}}{{{resume.website[0]}}}")
     if resume.phone:
         header_lines.append(f"\\mobile{{{resume.phone}}}")
     if resume.email:

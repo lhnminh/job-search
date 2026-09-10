@@ -13,7 +13,7 @@ from md_to_latex import parse_md_resume, render_jake, render_vmock, render_loc  
 
 SAMPLE_MD = """# Morgan Le
 
-[morgan.hn.le@gmail.com](mailto:morgan.hn.le@gmail.com) | (347) 774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [github.com/lhnminh](https://github.com/lhnminh) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
+[morgan.hn.le@gmail.com](mailto:morgan.hn.le@gmail.com) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
 
 ## Education
 
@@ -57,7 +57,7 @@ class MdToLatexTests(unittest.TestCase):
     def test_parse_md_resume(self) -> None:
         resume = parse_md_resume(SAMPLE_MD)
         self.assertEqual("Morgan Le", resume.name)
-        self.assertEqual("(347) 774-6979", resume.phone)
+        self.assertEqual("347-774-6979", resume.phone)
         self.assertEqual("morgan.hn.le@gmail.com", resume.email)
         self.assertEqual(3, len(resume.sections))
         self.assertEqual("Education", resume.sections[0].name)

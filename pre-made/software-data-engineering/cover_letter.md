@@ -1,6 +1,6 @@
 # Morgan Le
 
-morgan.hn.le@gmail.com | (347) 774-6979  
+morgan.hn.le@gmail.com | 347-774-6979  
 205 W 103rd, Apt. 4E  
 New York, NY 10025
 

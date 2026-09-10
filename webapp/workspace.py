@@ -20,7 +20,9 @@ SKILL_SCRIPTS = REPOSITORY_ROOT / ".agents" / "skills" / "tailor-resume" / "scri
 import sys
 
 sys.path.insert(0, str(SKILL_SCRIPTS))
+sys.path.insert(0, str(REPOSITORY_ROOT / "scripts"))
 
+from md_to_latex import parse_md_resume, render_loc  # noqa: E402
 from resume_validation import (  # noqa: E402
     ITEM_RE,
     ResumeValidationError,
@@ -251,16 +253,24 @@ class WorkspaceStore:
 
     def __init__(self, repository: Path = REPOSITORY_ROOT) -> None:
         self.repository = repository.resolve()
-        self.master_path = self.repository / "master" / "_resume.tex"
+        md_master = self.repository / "master" / "resume.md"
+        tex_master = self.repository / "master" / "_resume.tex"
+        self.master_path = md_master if md_master.is_file() else tex_master
         self.master_pdf_path = self.repository / "master" / "Morgan_Le_Resume.pdf"
         self.sessions_directory = self.repository / ".resume" / "webapp" / "sessions"
         self.archive_directory = self.repository / ".resume" / "webapp" / "archive"
         self.previews_directory = self.repository / ".resume" / "webapp" / "previews"
 
-    def master(self) -> dict[str, Any]:
+    def _read_master_source(self) -> str:
         if not self.master_path.is_file():
             raise WorkspaceError("The master resume source could not be found.")
         source = self.master_path.read_text(encoding="utf-8")
+        if self.master_path.suffix == ".md":
+            return render_loc(parse_md_resume(source))
+        return source
+
+    def master(self) -> dict[str, Any]:
+        source = self._read_master_source()
         entries = _entry_records(source)
         for entry in entries:
             for bullet in entry["bullets"]:
@@ -330,7 +340,7 @@ class WorkspaceStore:
             ending = f"-{suffix}"
             session_id = f"{base[: 80 - len(ending)].rstrip('-')}{ending}"
             suffix += 1
-        source = self.master_path.read_text(encoding="utf-8")
+        source = self._read_master_source()
         timestamp = _now()
         payload = {
             "schema_version": 1,
@@ -342,7 +352,7 @@ class WorkspaceStore:
                 "url": job_url.strip(),
                 "description": job_description,
             },
-            "master": {"path": "master/_resume.tex", "sha256": _sha256(self.master_path)},
+            "master": {"path": str(self.master_path.relative_to(self.repository)), "sha256": _sha256(self.master_path)},
             "entries": _entry_records(source),
             "requirements": [],
             "suggestions": None,
@@ -403,8 +413,8 @@ class WorkspaceStore:
 
     def reconcile_session(self, session_id: str) -> dict[str, Any]:
         path, payload = self._load(session_id)
-        source = self.master_path.read_text(encoding="utf-8")
-        payload["master"] = {"path": "master/_resume.tex", "sha256": _sha256(self.master_path)}
+        source = self._read_master_source()
+        payload["master"] = {"path": str(self.master_path.relative_to(self.repository)), "sha256": _sha256(self.master_path)}
         payload["entries"] = _entry_records(source)
         payload["requirements"] = []
         payload["suggestions"] = None
@@ -949,7 +959,8 @@ class WorkspaceStore:
     def assemble_source(self, session_id: str, *, require_complete: bool) -> str:
         _, payload = self._load(session_id)
         self._require_fresh(payload)
-        source = self.master_path.read_text(encoding="utf-8")
+        master_source = self._read_master_source()
+        source = master_source
         locations = self._entry_locations(source)
         if len(locations) != len(payload["entries"]):
             raise WorkspaceError("The master resume structure no longer matches the session.")
@@ -993,13 +1004,13 @@ class WorkspaceStore:
         ):
             source = re.sub(r"(?m)^[ \t]*\\section\{Projects\}[ \t]*(?:\n|$)", "", source)
         errors = validate_tailored_tex(
-            self.master_path.read_text(encoding="utf-8"),
+            master_source,
             source,
             payload["confirmed_facts"],
         )
         errors.extend(
             validate_tailored_completeness(
-                self.master_path.read_text(encoding="utf-8"), source
+                master_source, source
             )
         )
         if errors:

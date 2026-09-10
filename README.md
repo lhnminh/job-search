@@ -2,7 +2,7 @@
 
 This repository turns a comprehensive LaTeX resume into job-specific, one-page A4 resumes through either a conversational Codex workflow or the included local Resume Workspace web app.
 
-[`master/_resume.tex`](master/_resume.tex) is the verified source of truth. During tailoring, Codex reviews every education item and work role, then asks you to choose which projects belong before reviewing the selected projects' bullets. It does not invent facts or silently remove content to make a resume fit.
+[`master/resume.md`](master/resume.md) is the verified source of truth in format-neutral Markdown. During tailoring, Codex reviews every education item and work role, then asks you to choose which projects belong before reviewing the selected projects' bullets. It does not invent facts or silently remove content to make a resume fit.
 
 ### Repository structure
 
@@ -14,8 +14,6 @@ applications/                   Tailored job applications (e.g. applications/<co
     Morgan_Le_Resume.pdf        Compiled 1-page A4 PDF
 master/
   resume.md                     Canonical Markdown resume (source of truth)
-  _resume.tex                   Comprehensive LaTeX resume
-  Morgan_Le_Resume.pdf          Generated comprehensive resume
 pre-made/
   <purpose>/
     resume.md                   Curated format-neutral resume content
@@ -86,17 +84,19 @@ uv sync
 ## Set up your resume
 
 1. Fork or clone this repository.
-2. Replace the personal details and resume content in `master/_resume.tex` with your verified history. Keep the existing `moderncv` structure and `\customcventry` entries used by the validator.
-3. Review `AGENTS.md` and adjust the content policies if needed.
-4. Build the comprehensive resume:
+2. Update personal details and verified history in `master/resume.md`.
+3. Review `AGENTS.md` and adjust content policies if needed.
+4. Build any pre-made track or application resume:
 
    ```bash
-   ./scripts/build_resume.sh
+   ./scripts/build_resume.sh pre-made/software-engineer
    ```
 
-The build creates `master/Morgan_Le_Resume.pdf`. Before publishing the file, it rewrites Tectonic's output as PDF 1.5 with a classic cross-reference table and verifies that text, page geometry, and hyperlinks are preserved. It also expands Unicode presentation-form ligatures such as `ﬀ` to their ordinary text equivalents without changing the visual rendering. The Jake-style template additionally forces traditional Type 1 fonts instead of CID Type 0 `Identity-H` fonts for compatibility with legacy resume parsers. The PDF is ignored by Git; `master/_resume.tex` remains the durable source.
+To compile a Markdown resume directly to PDF using any template (`jake`, `vmock`, `loc`):
 
-To use a different output filename, update it consistently in the build script, skill, and repository instructions.
+```bash
+python scripts/md_to_latex.py master/resume.md --template jake --build
+```
 
 ## Tailor for a job
 
@@ -139,14 +139,13 @@ The repository includes a local, self-hosted browser interface in `webapp/`. It 
 
 ### First-time setup
 
-Run these commands from the repository root:
+Run this command from the repository root:
 
 ```bash
 uv sync
-./scripts/build_resume.sh
 ```
 
-The first command installs the Python dependency used for PDF inspection and normalization. The second command compiles `master/_resume.tex` into the master PDF displayed by the app. Tectonic must be installed before the build runs.
+This installs the Python dependencies used for PDF inspection, normalization, and tests. Tectonic must be installed before running PDF builds.
 
 ### Start the app
 
@@ -176,7 +175,7 @@ The server accepts only loopback hosts (`127.0.0.1`, `localhost`, or `::1`) so r
 
 The visual workflow is:
 
-1. Review the built-in master resume. The app reads `master/_resume.tex`; no resume upload is required.
+1. Review the built-in master resume. The app reads `master/resume.md`; no resume upload is required.
 2. Select **Tailor for a job**, then enter the company, role, optional job link, and complete job description.
 3. Select **Prepare suggestions**. This creates a local session from a complete snapshot of the current master resume.
 4. Send the analysis request to the active Codex task:
@@ -187,7 +186,7 @@ The visual workflow is:
 7. After every recommendation has an explicit decision, build the PDF preview. If it exceeds one page, return to the specific fitting opportunities shown by the app; nothing is shortened or removed automatically.
 8. Export only after every decision is resolved and the current preview passes the one-page A4 checks.
 
-The exported files are written to `<company-role>/_resume.tex` and `<company-role>/Morgan_Le_Resume.pdf`. Export does not edit `master/_resume.tex`. If the target folder already exists, the app asks before overwriting that tailored version.
+The exported files are written to `<company-role>/_resume.tex` and `<company-role>/Morgan_Le_Resume.pdf`. Export does not edit `master/resume.md`. If the target folder already exists, the app asks before overwriting that tailored version.
 
 ### Local data and resuming work
 
@@ -200,13 +199,12 @@ The workspace stores its disposable state under the gitignored `.resume/webapp/`
   previews/    Temporary PDF preview sources and output
 ```
 
-Open **Sessions** in the app to resume or archive an earlier session. If `master/_resume.tex` changes after a session starts, the app marks that session as stale and requires reconciliation before applying its suggestions.
+Open **Sessions** in the app to resume or archive an earlier session. If `master/resume.md` changes after a session starts, the app marks that session as stale and requires reconciliation before applying its suggestions.
 
 ### Troubleshooting
 
 - **`uv: command not found`:** install uv, then run `uv sync` from the repository root.
 - **`Tectonic is required`:** install Tectonic and confirm `tectonic --version` works in the same terminal.
-- **The master PDF is unavailable:** run `./scripts/build_resume.sh`, then refresh the page.
 - **Port 4173 is already in use:** start the app with another loopback port, such as `./scripts/run_resume_app.sh --port 4174`.
 - **Suggestions do not appear:** make sure Codex finished the copied workspace request, then select **Check for suggestions**.
 - **A session says the master changed:** use the app's restart/reconciliation action so recommendations are regenerated against the current master resume.
@@ -215,22 +213,16 @@ The master resume is read-only in the web interface. Workspace sessions, decisio
 
 ## Build and validate manually
 
-Build the comprehensive resume:
+Build a tailored resume or premade track from a folder:
 
 ```bash
-./scripts/build_resume.sh
+./scripts/build_resume.sh "pre-made/software-engineer"
 ```
 
-Build a tailored resume from a root-level folder:
+This writes only `<resume-folder>/Morgan_Le_Resume.pdf`. Validate it with:
 
 ```bash
-./scripts/build_resume.sh "company-role"
-```
-
-This writes only `company-role/Morgan_Le_Resume.pdf`. Validate it with:
-
-```bash
-uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "company-role"
+uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "pre-made/software-engineer"
 ```
 
 Build a reusable premade in its default Jake format:
@@ -272,7 +264,7 @@ The validator checks folder contents, protected historical and contact fields, n
 - Select projects explicitly for each tailored resume; project exclusion never removes them from the master source.
 - Require explicit bullet-level decisions during tailoring and page fitting, plus explicit project-level inclusion decisions.
 - Treat every tailored resume as a one-page A4 document.
-- Review `master/_resume.tex` before making a fork public because it contains personal information.
+- Review `master/resume.md` before making a fork public because it contains personal information.
 - Codex does not commit or push changes unless explicitly asked.
 
 See [`SPEC.md`](SPEC.md) for the full workflow contract.

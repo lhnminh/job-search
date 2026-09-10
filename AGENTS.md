@@ -6,29 +6,29 @@ This repository maintains one comprehensive resume reference and multiple applic
 
 Before editing, identify which of these the user is requesting:
 
-1. A change to the comprehensive reference in `master/_resume.tex`.
+1. A change to the comprehensive reference in `master/resume.md`.
 2. A change to an existing tailored version.
 3. A new tailored version for a job, company, or discipline.
 
 Do not treat these as interchangeable.
 
-## Canonical Reference: `master/_resume.tex`
+## Canonical Reference: `master/resume.md`
 
-`master/_resume.tex` is the canonical content library and source of truth for verified resume facts. Its rendered counterpart is `master/Morgan_Le_Resume.pdf`.
+`master/resume.md` is the canonical content library and source of truth for verified resume facts. It is maintained as a format-neutral Markdown collection of all verified experiences, projects, and skills (no `.tex` or `.pdf` resides in `master/`).
 
 Only active, uncommented resume content is verified as the user's. Commented-out resume entries, bullets, projects, awards, skills, and examples are not the user's claims and must never be activated, proposed, or used in any resume version.
 
 - It should accumulate all verified positions, bullet points, projects, skills, awards, and education details.
-- It may be two or more pages. Do not shorten it merely to meet a one-page resume convention.
+- It may be arbitrarily long. Do not shorten it merely to meet a one-page resume convention.
 - Do not remove content from it to make a tailored application stronger.
 - Preserve unrelated reference content whenever adding or updating material.
-- Build new tailored versions from the latest `master/_resume.tex` unless the user explicitly names another starting point.
+- Build new tailored versions from the latest `master/resume.md` unless the user explicitly names another starting point.
 
 ### Interactive Codex source rules
 
 The repo-specific `tailor-resume` skill is the interactive workflow. It follows a stricter append-only policy for the master source of truth:
 
-- Automated skill operations may append accepted bullets, projects, or facts to `master/_resume.tex`.
+- Automated skill operations may append accepted bullets, projects, or facts to `master/resume.md`.
 - The skill must never replace or delete existing master content.
 - Tailored versions may replace or remove their own content without changing the master source.
 - A tailored proposal is appended to the master only after the user explicitly selects `/source`.
@@ -43,7 +43,7 @@ The repo-specific `tailor-resume` skill is the interactive workflow. It follows 
   - Upon user approval or targeted tweaks, compile to PDF using `python scripts/md_to_latex.py <target>/resume.md --template jake --build` (or `vmock` if space is tight) and verify 1-page A4 compliance.
 - **Detailed Entry-by-Entry Mode (Ledger / Webapp)**:
   - If the user explicitly asks for step-by-step entry-by-entry review, use the ledger workflow under `.resume/sessions/` or the local Resume Workspace webapp. Employer, historical title, and date lines remain locked context.
-- Automated skill operations may append accepted bullets, projects, or facts to `master/resume.md` and `master/_resume.tex` only when the user explicitly requests it.
+- Automated skill operations may append accepted bullets, projects, or facts to `master/resume.md` only when the user explicitly requests it.
 - Never automatically delete or weaken master content.
 - Tailored versions may select, replace, or remove their own content without changing the master source.
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
@@ -112,32 +112,31 @@ Use `scripts/md_to_latex.py` to compile `resume.md` to any template (`jake`, `vm
 
 ## Projects Are Additive
 
-Projects in `master/_resume.tex` are a reference inventory.
+Projects in `master/resume.md` are a reference inventory.
 
 - Adding a project means placing it alongside existing projects.
 - Do not infer that a newly supplied project should replace the currently visible project.
 - Removing or commenting out a project requires an explicit user request.
-- Page count is not a reason to delete a project from the general reference.
+- Length is not a reason to delete a project from the general reference.
 
 ## Build and Output Rules
 
-Use the existing build script:
+Use the existing build script for tailored or pre-made folders containing `_resume.tex`:
 
 ```bash
-./scripts/build_resume.sh
 ./scripts/build_resume.sh "resume-folder-name"
 ```
 
-- No argument builds the master source of truth.
 - A folder argument builds that internal version (e.g. `./scripts/build_resume.sh pre-made/finance-consulting`).
-- The source-of-truth build writes `master/Morgan_Le_Resume.pdf`.
+- `master/` is maintained purely as Markdown (`master/resume.md`) and is not compiled into a PDF.
+- To compile a markdown resume directly, use `python scripts/md_to_latex.py <path/to/resume.md> --template jake --build`.
 - A tailored build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
 - Every active tailored or premade resume folder contains `_resume.tex` and its independent `Morgan_Le_Resume.pdf`.
 - Shared LaTeX classes, styles, and fonts belong only in `shared/latex/`.
 - Do not duplicate shared support files inside resume folders.
 - The build script must compile in a temporary directory containing the selected `_resume.tex` and copied `shared/latex/` files.
 - Do not expose internal version names in the PDF filename.
-- A build may overwrite only the master PDF or the PDF inside the selected tailored folder. It must never overwrite another version's PDF.
+- A build may overwrite only the PDF inside the selected tailored folder. It must never overwrite another version's PDF.
 - Do not use a shared output PDF or a central `output/pdf/` directory.
 - Tectonic is installed through Homebrew. Prefer the installed `tectonic` command.
 - The build script must normalize Tectonic output to PDF 1.5 with a classic cross-reference table before publishing it, while preserving text, page geometry, and hyperlinks.

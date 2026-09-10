@@ -1,6 +1,6 @@
 # Morgan Le
 
-[morgan.hn.le@gmail.com](mailto:morgan.hn.le@gmail.com) | (347) 774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [github.com/lhnminh](https://github.com/lhnminh) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
+[morgan.hn.le@gmail.com](mailto:morgan.hn.le@gmail.com) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
 
 ## Education
 
@@ -22,19 +22,19 @@
 - Oversaw service delivery across a regional team of 10+ personnel and BPO partners, coordinating workflows and monitoring operational performance.
 
 ### [Boston Consulting Group (BCG)](https://www.bcg.com/about/overview) | Consultant
-*Jan – Jun 2025*
+*Jan 2025 -- Jun 2025*
 - Supported the go-to-market strategy for a US$10B real estate project.
 - Analyzed customer and survey data to inform product positioning, launch priorities, and feature decisions.
 - Built pricing and market analysis models to estimate pricing premiums, evaluate market opportunities, and support commercial recommendations.
 
 ### [Peloton](https://www.onepeloton.com/company) | Business Operations Analyst II
-*Dec – Jun 2024*
+*Dec 2023 -- Jun 2024*
 - Conducted spend analysis across software procurement to identify cost-saving and commercial opportunities.
 - Identified initiatives that delivered $800K in annual savings and generated $2M in additional revenue opportunities.
 - Built BI dashboards and analytical reports that helped business unit leaders identify $10M in potential savings.
 
-### [Samsung Electronics Americas](https://www.samsung.com/us/about-us/our-business/) | Supply Chain Data Ops Analyst
-*May – Dec 2023*
+### [Samsung Electronics America](https://www.samsung.com/us/about-us/our-business/) | Supply Chain Data Ops Analyst
+*May 2023 -- Dec 2023*
 - Managed procurement operations across 100+ material supply chains.
 - Automated purchase-order tracking and reporting workflows supporting recurring procurement operations.
 - Improved analyst productivity by 10% through Excel reporting optimization and automated data-processing workflows.

@@ -27,7 +27,11 @@ from resume_validation import (  # noqa: E402
 class ResumeValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        sys.path.insert(0, str(REPOSITORY_ROOT / "scripts"))
+        from md_to_latex import parse_md_resume, render_loc
+
         cls.source = (REPOSITORY_ROOT / MASTER_SOURCE_RELATIVE_PATH).read_text(encoding="utf-8")
+        cls.latex_source = render_loc(parse_md_resume(cls.source))
 
     def test_parses_reference_entries(self) -> None:
         entries = parse_resume(self.source)
@@ -59,7 +63,7 @@ class ResumeValidationTests(unittest.TestCase):
 \begin{document}
 \begin{center}
   \textbf{\Huge \scshape Morgan Le} \\ \vspace{1pt}
-  \small (347) 774 6979 $|$
+  \small 347-774-6979 $|$
   \href{mailto:morgan.hn.le@gmail.com}{\underline{morgan.hn.le@gmail.com}} $|$
   \href{https://www.linkedin.com/in/morganhle/}{\underline{linkedin.com/in/morganhle}} $|$
   \href{https://github.com/lhnminh}{\underline{github.com/lhnminh}}
@@ -70,7 +74,7 @@ class ResumeValidationTests(unittest.TestCase):
             {
                 "firstname": ("Morgan",),
                 "familyname": ("Le",),
-                "mobile": ("(347) 774 6979",),
+                "mobile": ("347-774-6979",),
                 "email": ("morgan.hn.le@gmail.com",),
                 "linkedin": (
                     "https://www.linkedin.com/in/morganhle/",
@@ -82,7 +86,7 @@ class ResumeValidationTests(unittest.TestCase):
         )
 
     def test_rejects_changed_historical_title(self) -> None:
-        changed = self.source.replace(
+        changed = self.latex_source.replace(
             "{\\itshape Consultant}{Jan 2025",
             "{\\itshape Senior Consultant}{Jan 2025",
             1,
@@ -91,8 +95,8 @@ class ResumeValidationTests(unittest.TestCase):
         self.assertTrue(any("Historical title changed" in error for error in errors))
 
     def test_rejects_old_mobile_number(self) -> None:
-        changed = self.source.replace(
-            "\\mobile{(347) 774 6979}",
+        changed = self.latex_source.replace(
+            "\\mobile{347-774-6979}",
             "\\mobile{(+84)93 658-5869}",
             1,
         )
@@ -100,29 +104,29 @@ class ResumeValidationTests(unittest.TestCase):
         self.assertIn("Contact field changed or is missing: \\mobile", errors)
 
     def test_rejects_unverified_numeric_claim(self) -> None:
-        changed = self.source.replace("data-driven analyses", "\\$999M of data-driven analyses", 1)
+        changed = self.latex_source.replace("data-driven analyses", "\\$999M of data-driven analyses", 1)
         errors = validate_tailored_tex(self.source, changed)
         self.assertTrue(any("$999M" in error for error in errors))
 
     def test_requires_every_experience_entry(self) -> None:
-        peloton_start = self.source.index(
+        peloton_start = self.latex_source.index(
             "{\\customcventry{\\href{https://www.onepeloton.com/company}{Peloton}}"
         )
-        samsung_start = self.source.index(
+        samsung_start = self.latex_source.index(
             "{\\customcventry{\\href{https://www.samsung.com/us/about-us/our-business/}{Samsung Electronics America}}"
         )
-        changed = self.source[:peloton_start] + self.source[samsung_start:]
+        changed = self.latex_source[:peloton_start] + self.latex_source[samsung_start:]
         errors = validate_tailored_completeness(self.source, changed)
         self.assertIn("Missing experience entry: Peloton", errors)
 
     def test_allows_an_explicitly_excluded_project(self) -> None:
-        housing_start = self.source.index(
+        housing_start = self.latex_source.index(
             "{\\customcventry{\\href{https://github.com/lhnminh/Kaggle-Housing-Prices-Comp}{Housing Prices Competition}}"
         )
-        axiom_start = self.source.index(
+        axiom_start = self.latex_source.index(
             "{\\customcventry{\\href{https://github.com/lhnminh/axiom}{Axiom}}"
         )
-        changed = self.source[:housing_start] + self.source[axiom_start:]
+        changed = self.latex_source[:housing_start] + self.latex_source[axiom_start:]
         errors = validate_tailored_completeness(self.source, changed)
         self.assertEqual([], errors)
 

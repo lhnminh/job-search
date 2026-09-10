@@ -19,7 +19,7 @@ CLAIM_RE = re.compile(
     r"(?:\b\d+(?:\.\d+)?\+)|(?:\b\d+(?:\.\d+)?/\d+(?:\.\d+)?)",
     re.IGNORECASE,
 )
-MASTER_SOURCE_RELATIVE_PATH = Path("master") / "_resume.tex"
+MASTER_SOURCE_RELATIVE_PATH = Path("master") / "resume.md"
 PDF_COMPATIBILITY_HEADER = "%PDF-1.5"
 PRESENTATION_LIGATURES = frozenset("\ufb00\ufb01\ufb02\ufb03\ufb04\ufb05\ufb06")
 
@@ -255,7 +255,61 @@ def _parse_jake_resume(source: str) -> list[Entry]:
     return entries
 
 
+def _strip_markdown_formatting(text: str) -> str:
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = text.replace("**", "").replace("*", "")
+    return text.strip()
+
+
+def _parse_markdown_resume(source: str) -> list[Entry]:
+    entries: list[Entry] = []
+    current_section = ""
+    current_entry = None
+
+    for line in source.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("## "):
+            current_section = stripped[3:].strip()
+            current_entry = None
+            continue
+        if stripped.startswith("### "):
+            raw_header = stripped[4:].strip()
+            parts = [_strip_markdown_formatting(p) for p in raw_header.split("|")]
+            title = parts[0]
+            subtitle = parts[1] if len(parts) > 1 else ""
+            current_entry = Entry(
+                section=current_section,
+                title=title,
+                subtitle=subtitle,
+                date="",
+                bullets=[],
+            )
+            entries.append(current_entry)
+            continue
+        if stripped.startswith("*") and stripped.endswith("*") and not stripped.startswith("*-"):
+            date_val = stripped.strip("* ").strip()
+            if current_entry and not current_entry.date:
+                current_entry.date = date_val
+            continue
+        if stripped.startswith("- "):
+            bullet_raw = stripped[2:].strip()
+            is_meta = bool(
+                re.match(r"^\*\*(?:Technologies|Technology|Tools):\*\*", bullet_raw, re.IGNORECASE)
+            )
+            if current_entry:
+                current_entry.bullets.append(Bullet(text=bullet_raw, is_metadata=is_meta))
+            continue
+
+    return entries
+
+
 def parse_resume(source: str) -> list[Entry]:
+    if "# " in source and "\\begin{document}" not in source and "\\documentclass" not in source:
+        entries = _parse_markdown_resume(source)
+        if entries:
+            return entries
     active = _strip_comments(source)
     entries = _parse_moderncv_resume(active)
     if not entries:
@@ -289,7 +343,40 @@ def _canonical_date(value: str) -> str:
     return re.sub(r"\s+", " ", normalized).strip()
 
 
+def _contact_fields_markdown(source: str) -> dict[str, tuple[str, ...]]:
+    fields: dict[str, tuple[str, ...]] = {}
+    for line in source.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("# ") and "firstname" not in fields:
+            name = stripped[2:].strip()
+            parts = name.split(maxsplit=1)
+            fields["firstname"] = (parts[0],)
+            fields["familyname"] = (parts[1] if len(parts) > 1 else "",)
+        elif "|" in stripped or "@" in stripped:
+            items = [it.strip() for it in stripped.split("|")]
+            for item in items:
+                link_m = re.match(r"\[([^\]]+)\]\(([^)]+)\)", item)
+                if link_m:
+                    label, url = link_m.group(1), link_m.group(2)
+                    if "mailto:" in url or "@" in label:
+                        fields["email"] = (label,)
+                    elif "linkedin.com" in url or "linkedin.com" in label:
+                        fields["linkedin"] = (url, label)
+                    elif "github.com" in url or "github.com" in label:
+                        fields["github"] = (url, label)
+                    else:
+                        fields["website"] = (url, label)
+                elif re.search(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b", item):
+                    fields["mobile"] = (item,)
+                elif "@" in item:
+                    fields["email"] = (item,)
+            break
+    return fields
+
+
 def _contact_fields(source: str) -> dict[str, tuple[str, ...]]:
+    if "\\begin{document}" not in source and "\\documentclass" not in source:
+        return _contact_fields_markdown(source)
     active = _strip_comments(source)
     marker = active.find("\\resumeContactHeader")
     if marker >= 0:
@@ -331,7 +418,9 @@ def _contact_fields(source: str) -> dict[str, tuple[str, ...]]:
                     fields["linkedin"] = (url, label)
                 elif "github.com" in url:
                     fields["github"] = (url, label)
-            if all(key in fields for key in ("email", "linkedin", "github")):
+                else:
+                    fields["website"] = (url, label)
+            if all(key in fields for key in ("email", "linkedin")):
                 return fields
 
     fields: dict[str, tuple[str, ...]] = {}
@@ -342,12 +431,15 @@ def _contact_fields(source: str) -> dict[str, tuple[str, ...]]:
         ("email", 1),
         ("linkedin", 2),
         ("github", 2),
+        ("homepage", 2),
     ):
         marker = active.find(f"\\{command}")
         if marker < 0:
             continue
         arguments, _ = _command_arguments(active, marker, f"\\{command}", count)
         fields[command] = tuple(tex_to_text(active[slice(*argument)]) for argument in arguments)
+    if "homepage" in fields and "website" not in fields:
+        fields["website"] = fields["homepage"]
     return fields
 
 
@@ -395,9 +487,19 @@ def validate_tailored_tex(
 
     root_contacts = _contact_fields(root_source)
     proposed_contacts = _contact_fields(proposed_source)
-    for command in ("firstname", "familyname", "mobile", "email", "github", "linkedin"):
+    for command in ("firstname", "familyname", "email", "linkedin"):
         if root_contacts.get(command) != proposed_contacts.get(command):
             errors.append(f"Contact field changed or is missing: \\{command}")
+    root_mobile = root_contacts.get("mobile", ("",))[0] if root_contacts.get("mobile") else ""
+    proposed_mobile = proposed_contacts.get("mobile", ("",))[0] if proposed_contacts.get("mobile") else ""
+    if re.sub(r"\D", "", root_mobile) != re.sub(r"\D", "", proposed_mobile):
+        errors.append("Contact field changed or is missing: \\mobile")
+    if root_contacts.get("github") != proposed_contacts.get("github"):
+        if root_contacts.get("github") or proposed_contacts.get("github"):
+            errors.append(f"Contact field changed or is missing: \\github")
+    if root_contacts.get("website") != proposed_contacts.get("website"):
+        if root_contacts.get("website") or proposed_contacts.get("website"):
+            errors.append(f"Contact field changed or is missing: website")
 
     verified_claims = numeric_claims(root_source + "\n" + "\n".join(confirmed_facts))
     extra_claims = numeric_claims(proposed_source) - verified_claims
@@ -484,9 +586,9 @@ def verify_pdf(path: Path) -> PdfReport:
 
 def tailored_source_path(repository: Path, target: str) -> Path:
     root = repository.resolve()
-    if not target or target in {".", "root"}:
-        raise ResumeValidationError("Validator target must be a tailored resume folder")
     requested = (root / target).resolve()
+    if not target or target in {".", "root", "master"} or requested == (root / "master").resolve():
+        raise ResumeValidationError("Validator target must be a tailored resume folder, not master")
     direct_source = requested / "_resume.tex"
     default_jake_source = requested / "Jake" / "_resume.tex"
     source = (default_jake_source if not direct_source.is_file() and default_jake_source.is_file() else direct_source).resolve()

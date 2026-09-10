@@ -3,14 +3,15 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-SOURCE_DIR_ARG="${1:-master}"
+SOURCE_DIR_ARG="${1:-}"
 SOURCE_NAME="_resume.tex"
 OUTPUT_NAME="Morgan_Le_Resume.pdf"
 SHARED_LATEX_DIR="$REPO_ROOT/shared/latex"
 NORMALIZER="$REPO_ROOT/scripts/normalize_pdf.py"
 
-if (( $# > 1 )); then
-  echo "Usage: $0 [resume-folder]" >&2
+if [[ -z "$SOURCE_DIR_ARG" || $# -gt 1 ]]; then
+  echo "Usage: $0 <resume-folder>" >&2
+  echo "Example: $0 pre-made/software-engineer" >&2
   echo "The output filename is always $OUTPUT_NAME." >&2
   exit 2
 fi
