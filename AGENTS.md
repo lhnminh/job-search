@@ -35,11 +35,19 @@ The repo-specific `tailor-resume` skill is the interactive workflow. It follows 
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
 - Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat, terminal chat interface, or require a separate API key.
 - The local Resume Workspace may present that same workflow visually. Its state belongs under the gitignored `.resume/webapp/` directory, and AI suggestions must still come from the active Codex conversation through the workspace bridge or registered WebMCP tools. The web server must not start a nested model session.
-- A new tailoring session must begin from a complete copy of `master/_resume.tex` and review the resume section by section, then entry by entry. Each education item and job is shown with all of its numbered bullets together, and every bullet requires an explicit decision. Before reviewing project bullets, show one complete project shortlist and require an explicit Include or Exclude decision for every project. Only included projects proceed to entry-level bullet review; excluded projects are removed from the tailored version by that project-level decision. The contact header is excluded.
-- A continuing session may use the bundled ledger helper to verify the saved master hash and load only the active entry. When the hash matches, do not reread `AGENTS.md`, the full master, or a job description already present in conversation context. A mismatch makes the session stale and requires a complete master reread and reconciliation before continuing.
-- Employer, historical title, and date lines are locked context in the interactive session.
-- Tailoring must not automatically remove, replace, or shorten content during either initial tailoring or page fitting. Every content mutation requires an explicit bullet-level decision, except that an explicit project-level Exclude decision removes that complete project from the tailored version.
-- Session state must include every explicit bullet and project-selection decision before Codex replies. When one user message decides multiple items, persist all of those decisions together in one atomic batch rather than performing separate ledger writes.
+- **Primary Tailoring Workflow (Fast Markdown Diff)**:
+  - When tailoring for an application, select the closest base `resume.md` from `pre-made/` (or `master/resume.md`).
+  - Create the tailored version in `<company-role>/resume.md` (or `applications/<company-role>/resume.md`).
+  - Present a unified in-chat Markdown diff and concise bullet/skill rationale against the base resume.
+  - The user reviews the diff directly in chat or using `python scripts/diff_resume.py <base> <target>` / native IDE diff viewers.
+  - Upon user approval or targeted tweaks, compile to PDF using `python scripts/md_to_latex.py <target>/resume.md --template jake --build` (or `vmock` if space is tight) and verify 1-page A4 compliance.
+- **Detailed Entry-by-Entry Mode (Ledger / Webapp)**:
+  - If the user explicitly asks for step-by-step entry-by-entry review, use the ledger workflow under `.resume/sessions/` or the local Resume Workspace webapp. Employer, historical title, and date lines remain locked context.
+- Automated skill operations may append accepted bullets, projects, or facts to `master/resume.md` and `master/_resume.tex` only when the user explicitly requests it.
+- Never automatically delete or weaken master content.
+- Tailored versions may select, replace, or remove their own content without changing the master source.
+- A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
+- Tailoring must happen directly in the active Codex or Antigravity conversation. Do not create a nested chat or require a separate API key.
 
 These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill is applying a change.
 
@@ -66,11 +74,12 @@ Examples:
 
 For a new tailored version:
 
-1. Create a descriptive internal folder.
-2. Copy only the latest `master/_resume.tex` into it.
-3. Select, reorder, condense, or rewrite the most relevant verified content.
-4. Preserve factual accuracy and quantified outcomes.
-5. Build and visually verify the tailored version, which creates its folder-owned PDF.
+1. Create a descriptive internal folder (e.g. `<company-role>/`).
+2. Adapt from the closest `pre-made/<track>/resume.md` (or `master/resume.md`).
+3. Select, reorder, condense, or align the most relevant verified content to the job description.
+4. Present and review the diff with the user (in-chat diff, `scripts/diff_resume.py`, or IDE diff viewer).
+5. Preserve factual accuracy and quantified outcomes.
+6. Compile and verify the tailored version using `python scripts/md_to_latex.py <target>/resume.md --template jake --build` (or `vmock`), ensuring exactly 1 A4 page.
 
 Tailored versions are selective snapshots. They do not replace the reference and do not automatically update existing variants unless the user asks for synchronization.
 
