@@ -74,6 +74,16 @@ For a new tailored version:
 
 Tailored versions are selective snapshots. They do not replace the reference and do not automatically update existing variants unless the user asks for synchronization.
 
+### Reusable premade formats
+
+Reusable variants under `pre-made/<purpose>/` contain two active format leaves and one source-only archive:
+
+- `Jake/` is the default format for building, validation, and delivery and uses the original Jake layout preserved in `templates/Jake/_resume.tex`.
+- `Loc/` preserves the legacy moderncv format.
+- `archived_Jake/` preserves the previous compressed Jake source and contains only `_resume.tex`; it is not a build or delivery target.
+
+Each active leaf owns its `_resume.tex` and `Morgan_Le_Resume.pdf`; do not place either file directly in the premade container. New premades must be created in both active formats from the same approved content. Use `scripts/convert_loc_to_jake.py` to derive the standalone Jake source from the approved Loc source. Canonical source-only format references live under `templates/Jake/`, `templates/Loc/`, and `templates/archived_Jake/`.
+
 ### Tailoring rules
 
 - Never invent experience, investment responsibilities, metrics, dates, technologies, or outcomes.
@@ -106,9 +116,10 @@ Use the existing build script:
 
 - No argument builds the master source of truth.
 - A folder argument builds that internal version.
+- A premade container argument such as `pre-made/finance-consulting` resolves to its `Jake/` leaf by default; pass the explicit `Loc/` path to build the legacy format.
 - The source-of-truth build writes `master/Morgan_Le_Resume.pdf`.
 - A tailored build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
-- Every tailored resume folder must contain only `_resume.tex` and its independent `Morgan_Le_Resume.pdf`.
+- Every active tailored resume leaf must contain only `_resume.tex` and its independent `Morgan_Le_Resume.pdf`; an `archived_Jake/` leaf contains only `_resume.tex`.
 - Shared LaTeX classes, styles, and fonts belong only in `shared/latex/`.
 - Do not duplicate shared support files inside resume folders.
 - The build script must compile in a temporary directory containing the selected `_resume.tex` and copied `shared/latex/` files.
@@ -116,6 +127,9 @@ Use the existing build script:
 - A build may overwrite only the master PDF or the PDF inside the selected tailored folder. It must never overwrite another version's PDF.
 - Do not use a shared output PDF or a central `output/pdf/` directory.
 - Tectonic is installed through Homebrew. Prefer the installed `tectonic` command.
+- The build script must normalize Tectonic output to PDF 1.5 with a classic cross-reference table before publishing it, while preserving text, page geometry, and hyperlinks.
+- Built resume text must not contain Unicode presentation-form ligatures such as `ﬀ`; the PDF normalizer expands their Unicode mappings for ATS compatibility without changing their visual rendering.
+- The Jake-style source must use T1 encoding and Latin Modern's Type 1 fonts so legacy resume parsers do not have to interpret CID Type 0 `Identity-H` text fonts.
 - Build intermediates must remain temporary and should be removed after verification.
 
 ## PDF Verification

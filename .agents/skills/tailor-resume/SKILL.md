@@ -7,6 +7,10 @@ description: Tailor, review, and build application-specific resumes in this repo
 
 Work directly in the current Codex conversation. Follow `AGENTS.md`; do not create another chat or call another model.
 
+## Route reusable premade work
+
+When the user asks to create or update a reusable variant under `pre-made/`, maintain active `pre-made/<purpose>/Jake/` and `pre-made/<purpose>/Loc/` leaves. Treat Jake as the default build, validation, and delivery format, while preserving Loc as the legacy moderncv rendering of the same approved content. Generate the standalone original-layout Jake source from Loc with `scripts/convert_loc_to_jake.py`; do not independently rewrite facts while converting formats. Preserve an existing previous compressed Jake source under `pre-made/<purpose>/archived_Jake/_resume.tex` without a PDF. Canonical source-only format references live in `templates/Jake/`, `templates/Loc/`, and `templates/archived_Jake/`.
+
 ## Route Resume Workspace sessions
 
 When the user refers to the local Resume Workspace, its browser UI, or a session created there, use the workspace bridge instead of creating a conversational ledger session. Prefer the page's `read_resume_tailoring_context` and `submit_resume_suggestions` WebMCP tools when they are available. Otherwise use:
@@ -18,7 +22,7 @@ uv run python webapp/manage.py submit <session-id> <analysis-json-file>
 uv run python webapp/manage.py revise <session-id> <request-id> <suggestion-json-file>
 ```
 
-Read the complete workspace context, including pending revision requests. For an initial analysis, generate one recommendation for every bullet plus one Include or Exclude recommendation for every project. Submit that complete analysis in one validated operation so the UI can show all suggestions inline at once. For a pending revision, replace only the requested suggestion with a grounded alternative. Do not make decisions for the user or invent facts. The UI persists explicit approvals, alternate wording, project choices, undo history, previews, and export state.
+Read the complete workspace context, including pending revision requests. For an initial analysis, generate one recommendation for every bullet plus one Include or Exclude recommendation for every project. Submit that complete analysis in one validated operation so every suggestion is immediately available through the focused resume review and side panel. For a pending revision, replace only the requested suggestion with a grounded alternative. Do not make decisions for the user or invent facts. The UI persists explicit approvals, alternate wording, project choices, undo history, previews, and export state.
 
 ## Route new and resumed sessions
 

@@ -11,6 +11,8 @@ from pypdf import PdfReader
 
 SECTION_RE = re.compile(r"\\section\{([^{}]+)\}")
 ENTRY_COMMAND = "\\customcventry"
+JAKE_SUBHEADING_COMMAND = "\\resumeSubheading"
+JAKE_PROJECT_COMMAND = "\\resumeProjectHeading"
 ITEM_RE = re.compile(r"(?m)^(?P<indent>[ \t]*)\\item(?:[ \t]+)?")
 CLAIM_RE = re.compile(
     r"(?:\\?\$\s*\d+(?:\.\d+)?\s*[KMB]?)|(?:\b\d+(?:\.\d+)?\\?%)|"
@@ -18,6 +20,8 @@ CLAIM_RE = re.compile(
     re.IGNORECASE,
 )
 MASTER_SOURCE_RELATIVE_PATH = Path("master") / "_resume.tex"
+PDF_COMPATIBILITY_HEADER = "%PDF-1.5"
+PRESENTATION_LIGATURES = frozenset("\ufb00\ufb01\ufb02\ufb03\ufb04\ufb05\ufb06")
 
 
 class ResumeValidationError(ValueError):
@@ -92,6 +96,40 @@ def _entry_arguments(source: str, command_start: int) -> list[tuple[int, int]]:
     return arguments
 
 
+def _command_arguments(
+    source: str,
+    command_start: int,
+    command: str,
+    count: int,
+) -> tuple[list[tuple[int, int]], int]:
+    cursor = _skip_space(source, command_start + len(command))
+    arguments: list[tuple[int, int]] = []
+    for _ in range(count):
+        cursor = _skip_space(source, cursor)
+        start, end, cursor = _balanced_group(source, cursor)
+        arguments.append((start, end))
+    return arguments, cursor
+
+
+def _strip_comments(source: str) -> str:
+    active_lines: list[str] = []
+    for line in source.splitlines():
+        cut = len(line)
+        for index, character in enumerate(line):
+            if character != "%":
+                continue
+            backslashes = 0
+            cursor = index - 1
+            while cursor >= 0 and line[cursor] == "\\":
+                backslashes += 1
+                cursor -= 1
+            if backslashes % 2 == 0:
+                cut = index
+                break
+        active_lines.append(line[:cut])
+    return "\n".join(active_lines)
+
+
 def tex_to_text(value: str) -> str:
     text = value
     href = re.compile(r"\\href\{[^{}]*\}\{([^{}]*)\}")
@@ -113,7 +151,7 @@ def _section_before(source: str, offset: int) -> str:
     return section
 
 
-def parse_resume(source: str) -> list[Entry]:
+def _parse_moderncv_resume(source: str) -> list[Entry]:
     entries: list[Entry] = []
     cursor = 0
     while True:
@@ -161,9 +199,156 @@ def parse_resume(source: str) -> list[Entry]:
         )
         cursor = arguments[-1][1] + 1
 
-    if not entries:
-        raise ResumeValidationError("No \\customcventry entries were found")
     return entries
+
+
+def _jake_bullets(source: str) -> list[Bullet]:
+    bullets: list[Bullet] = []
+    for match in re.finditer(r"\\resumeItem(?=\s*\{)", source):
+        try:
+            arguments, _ = _command_arguments(source, match.start(), "\\resumeItem", 1)
+        except ResumeValidationError:
+            continue
+        bullet_source = source[slice(*arguments[0])].strip()
+        display = tex_to_text(bullet_source)
+        bullets.append(
+            Bullet(
+                text=bullet_source,
+                is_metadata=display.lower().startswith(("technologies:", "technology:", "tools:")),
+            )
+        )
+    return bullets
+
+
+def _parse_jake_resume(source: str) -> list[Entry]:
+    body = source.partition("\\begin{document}")[2] or source
+    command_re = re.compile(r"\\(?:resumeSubheading|resumeProjectHeading)(?=\s*\{)")
+    matches = list(command_re.finditer(body))
+    entries: list[Entry] = []
+    for index, match in enumerate(matches):
+        command = match.group(0)
+        count = 4 if command == JAKE_SUBHEADING_COMMAND else 2
+        arguments, command_end = _command_arguments(body, match.start(), command, count)
+        next_entry = matches[index + 1].start() if index + 1 < len(matches) else len(body)
+        next_section_match = SECTION_RE.search(body, command_end)
+        next_section = next_section_match.start() if next_section_match else len(body)
+        content_end = min(next_entry, next_section)
+        if command == JAKE_SUBHEADING_COMMAND:
+            title = tex_to_text(body[slice(*arguments[0])])
+            date = tex_to_text(body[slice(*arguments[1])])
+            subtitle = tex_to_text(body[slice(*arguments[2])])
+        else:
+            heading = tex_to_text(body[slice(*arguments[0])]).replace("$", "")
+            parts = [part.strip() for part in heading.split("|", 1)]
+            title = parts[0]
+            subtitle = parts[1] if len(parts) > 1 else ""
+            date = tex_to_text(body[slice(*arguments[1])])
+        entries.append(
+            Entry(
+                section=_section_before(body, match.start()),
+                title=title,
+                subtitle=subtitle,
+                date=date,
+                bullets=_jake_bullets(body[command_end:content_end]),
+            )
+        )
+    return entries
+
+
+def parse_resume(source: str) -> list[Entry]:
+    active = _strip_comments(source)
+    entries = _parse_moderncv_resume(active)
+    if not entries:
+        entries = _parse_jake_resume(active)
+    if not entries:
+        raise ResumeValidationError(
+            "No active \\customcventry, \\resumeSubheading, or \\resumeProjectHeading entries were found"
+        )
+    return entries
+
+
+def _canonical_date(value: str) -> str:
+    months = {
+        "january": "jan",
+        "february": "feb",
+        "march": "mar",
+        "april": "apr",
+        "june": "jun",
+        "july": "jul",
+        "august": "aug",
+        "september": "sep",
+        "october": "oct",
+        "november": "nov",
+        "december": "dec",
+    }
+    normalized = value.casefold()
+    for full, short in months.items():
+        normalized = re.sub(rf"\b{full}\b", short, normalized)
+    normalized = normalized.replace("–", "-")
+    normalized = re.sub(r"\s*-+\s*", "-", normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def _contact_fields(source: str) -> dict[str, tuple[str, ...]]:
+    active = _strip_comments(source)
+    marker = active.find("\\resumeContactHeader")
+    if marker >= 0:
+        arguments, _ = _command_arguments(active, marker, "\\resumeContactHeader", 9)
+        values = [tex_to_text(active[slice(*argument)]) for argument in arguments]
+        return {
+            "firstname": (values[0],),
+            "familyname": (values[1],),
+            "mobile": (values[2],),
+            "email": (values[3],),
+            "linkedin": (values[4], values[5]),
+            "github": (values[6], values[7]),
+        }
+
+    body = active.partition("\\begin{document}")[2] or active
+    center_start = body.find("\\begin{center}")
+    center_end = body.find("\\end{center}", center_start)
+    if center_start >= 0 and center_end > center_start:
+        header = body[center_start:center_end]
+        name_marker = header.find("\\textbf")
+        small_marker = header.find("\\small")
+        separator = header.find("$|$", small_marker)
+        if name_marker >= 0 and small_marker >= 0 and separator > small_marker:
+            name_arguments, _ = _command_arguments(header, name_marker, "\\textbf", 1)
+            name = tex_to_text(header[slice(*name_arguments[0])])
+            name_parts = name.split(maxsplit=1)
+            fields = {
+                "firstname": (name_parts[0],),
+                "familyname": (name_parts[1] if len(name_parts) > 1 else "",),
+                "mobile": (tex_to_text(header[small_marker + len("\\small") : separator]),),
+            }
+            for link in re.finditer(r"\\href(?=\s*\{)", header):
+                arguments, _ = _command_arguments(header, link.start(), "\\href", 2)
+                url = tex_to_text(header[slice(*arguments[0])])
+                label = tex_to_text(header[slice(*arguments[1])])
+                if url.startswith("mailto:"):
+                    fields["email"] = (url.removeprefix("mailto:"),)
+                elif "linkedin.com" in url:
+                    fields["linkedin"] = (url, label)
+                elif "github.com" in url:
+                    fields["github"] = (url, label)
+            if all(key in fields for key in ("email", "linkedin", "github")):
+                return fields
+
+    fields: dict[str, tuple[str, ...]] = {}
+    for command, count in (
+        ("firstname", 1),
+        ("familyname", 1),
+        ("mobile", 1),
+        ("email", 1),
+        ("linkedin", 2),
+        ("github", 2),
+    ):
+        marker = active.find(f"\\{command}")
+        if marker < 0:
+            continue
+        arguments, _ = _command_arguments(active, marker, f"\\{command}", count)
+        fields[command] = tuple(tex_to_text(active[slice(*argument)]) for argument in arguments)
+    return fields
 
 
 def numeric_claims(source: str) -> set[str]:
@@ -203,25 +388,15 @@ def validate_tailored_tex(
             errors.append(
                 f"Historical title changed for {entry.title}: expected {expected_title!r}, got {entry.subtitle!r}"
             )
-        if expected_date.casefold() != entry.date.casefold():
+        if _canonical_date(expected_date) != _canonical_date(entry.date):
             errors.append(
                 f"Historical dates changed for {entry.title}: expected {expected_date!r}, got {entry.date!r}"
             )
 
+    root_contacts = _contact_fields(root_source)
+    proposed_contacts = _contact_fields(proposed_source)
     for command in ("firstname", "familyname", "mobile", "email", "github", "linkedin"):
-        root_line = next(
-            (line.strip() for line in root_source.splitlines() if line.lstrip().startswith(f"\\{command}")),
-            None,
-        )
-        proposed_line = next(
-            (
-                line.strip()
-                for line in proposed_source.splitlines()
-                if line.lstrip().startswith(f"\\{command}")
-            ),
-            None,
-        )
-        if root_line != proposed_line:
+        if root_contacts.get(command) != proposed_contacts.get(command):
             errors.append(f"Contact field changed or is missing: \\{command}")
 
     verified_claims = numeric_claims(root_source + "\n" + "\n".join(confirmed_facts))
@@ -264,11 +439,19 @@ def validate_tailored_completeness(root_source: str, proposed_source: str) -> li
 def verify_pdf(path: Path) -> PdfReport:
     if not path.is_file():
         raise ResumeValidationError(f"Expected PDF was not created: {path}")
-    reader = PdfReader(path)
+    reader = PdfReader(path, strict=True)
     if not reader.pages:
         raise ResumeValidationError("PDF contains no pages")
 
-    extracted = [len((page.extract_text() or "").strip()) for page in reader.pages]
+    if reader.pdf_header != PDF_COMPATIBILITY_HEADER:
+        raise ResumeValidationError(
+            f"PDF must use compatibility version 1.5; got {reader.pdf_header}"
+        )
+    if b"/Type/XRef" in path.read_bytes():
+        raise ResumeValidationError("PDF must use a classic cross-reference table")
+
+    page_text = [(page.extract_text() or "").strip() for page in reader.pages]
+    extracted = [len(text) for text in page_text]
     links = 0
     a4 = True
     for page in reader.pages:
@@ -281,6 +464,12 @@ def verify_pdf(path: Path) -> PdfReport:
 
     if not all(extracted):
         raise ResumeValidationError("At least one PDF page has no extractable text")
+    found_ligatures = sorted(PRESENTATION_LIGATURES.intersection("".join(page_text)))
+    if found_ligatures:
+        codepoints = ", ".join(f"U+{ord(character):04X}" for character in found_ligatures)
+        raise ResumeValidationError(
+            f"PDF text contains ATS-hostile presentation ligatures: {codepoints}"
+        )
     if not a4:
         raise ResumeValidationError("PDF is not A4")
     if links == 0:
@@ -297,7 +486,10 @@ def tailored_source_path(repository: Path, target: str) -> Path:
     root = repository.resolve()
     if not target or target in {".", "root"}:
         raise ResumeValidationError("Validator target must be a tailored resume folder")
-    source = (root / target / "_resume.tex").resolve()
+    requested = (root / target).resolve()
+    direct_source = requested / "_resume.tex"
+    default_jake_source = requested / "Jake" / "_resume.tex"
+    source = (default_jake_source if not direct_source.is_file() and default_jake_source.is_file() else direct_source).resolve()
     master_source = (root / MASTER_SOURCE_RELATIVE_PATH).resolve()
     if root not in source.parents or source.parent == root:
         raise ResumeValidationError(f"Resume target must stay in a repository subfolder: {target}")

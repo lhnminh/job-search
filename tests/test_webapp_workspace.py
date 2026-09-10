@@ -389,6 +389,10 @@ class WorkspaceStoreTests(unittest.TestCase):
             REPOSITORY_ROOT / "scripts" / "build_resume.sh",
             self.repository / "scripts" / "build_resume.sh",
         )
+        shutil.copy2(
+            REPOSITORY_ROOT / "scripts" / "normalize_pdf.py",
+            self.repository / "scripts" / "normalize_pdf.py",
+        )
         shutil.copytree(REPOSITORY_ROOT / "shared", self.repository / "shared")
         session = self._save_analysis()
         decisions = [

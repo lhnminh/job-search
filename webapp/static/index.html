@@ -135,25 +135,39 @@
         <section class="suggestion-stage" aria-labelledby="suggestion-title">
           <div class="suggestion-header">
             <div>
-              <p class="eyebrow">Complete resume review</p>
-              <h2 id="suggestion-title">AI suggestions</h2>
+              <p class="eyebrow">Review one item at a time</p>
+              <h2 id="suggestion-title">Resume review</h2>
             </div>
             <div class="suggestion-header-actions">
-              <button id="toggle-evidence" class="button button-quiet" type="button" aria-expanded="false">Requirements &amp; preview</button>
+              <button id="toggle-evidence" class="button button-quiet" type="button" aria-expanded="false">Review panel</button>
               <button id="build-preview" class="button button-quiet" type="button" disabled>Build preview</button>
             </div>
           </div>
           <div id="decision-overview" class="decision-overview" hidden></div>
           <div id="review-message" class="review-message" aria-live="polite"></div>
+          <div id="review-navigator" class="review-navigator" hidden>
+            <button id="previous-review-item" class="navigator-button" type="button" aria-label="Previous review item">←</button>
+            <div>
+              <span id="review-position">Item 1 of 1</span>
+              <strong id="review-focus-label">Resume item</strong>
+            </div>
+            <button id="next-review-item" class="navigator-button" type="button" aria-label="Next review item">→</button>
+          </div>
           <div id="suggestion-content" class="suggestion-document"></div>
         </section>
 
         <aside class="evidence-panel" id="evidence-panel">
           <div class="evidence-tabs" role="tablist" aria-label="Review context">
-            <button class="evidence-tab is-active" data-panel="requirements-panel" role="tab" type="button">Requirements</button>
-            <button class="evidence-tab" data-panel="preview-panel" role="tab" type="button">Preview</button>
+            <button class="evidence-tab is-active" data-panel="suggestion-panel" role="tab" type="button" aria-selected="true">Suggestion</button>
+            <button class="evidence-tab" data-panel="requirements-panel" role="tab" type="button" aria-selected="false">Requirements</button>
+            <button class="evidence-tab" data-panel="preview-panel" role="tab" type="button" aria-selected="false">Preview</button>
           </div>
-          <section id="requirements-panel" class="evidence-content" role="tabpanel">
+          <section id="suggestion-panel" class="evidence-content suggestion-panel" role="tabpanel">
+            <div id="suggestion-detail" class="suggestion-detail">
+              <p class="muted-panel-copy">Select a resume bullet to review its suggestion.</p>
+            </div>
+          </section>
+          <section id="requirements-panel" class="evidence-content" role="tabpanel" hidden>
             <p class="eyebrow">Job evidence</p>
             <h2>What the role needs</h2>
             <div id="requirements-list" class="requirements-list"></div>

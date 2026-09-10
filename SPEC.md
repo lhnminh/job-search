@@ -76,6 +76,13 @@ For master review, accepting revised wording appends it beside the existing bull
 - Page fitting must never remove or rewrite content automatically.
 - If the user's accepted fitting decisions cannot produce a valid one-page PDF without violating the content floor, the tool must report the failure instead of claiming success.
 
+## Reusable premade formats
+
+- Every reusable variant under `pre-made/<purpose>/` has active `Jake/` and `Loc/` leaves containing the same approved resume content, plus a source-only `archived_Jake/` snapshot when the previous compressed Jake format exists.
+- `Jake/` uses the original 11pt Jake layout and is the default build, validation, and delivery target; `Loc/` is the legacy moderncv rendering.
+- Each active format leaf contains only `_resume.tex` and its own `Morgan_Le_Resume.pdf`; `archived_Jake/` contains only `_resume.tex`.
+- New premades are generated in both active formats. Canonical source-only format references live in `templates/Jake/`, `templates/Loc/`, and `templates/archived_Jake/`.
+
 ## Sessions
 
 - Interactive state is stored under `.resume/sessions/`, which is gitignored.

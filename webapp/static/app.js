@@ -3,6 +3,7 @@ const state = {
   session: null,
   filter: "all",
   otherTarget: null,
+  activeReview: null,
 };
 
 const views = {
@@ -24,6 +25,7 @@ const sourceDialog = document.querySelector("#source-dialog");
 const description = document.querySelector("#job-description");
 const descriptionCount = document.querySelector("#description-count");
 const suggestionContent = document.querySelector("#suggestion-content");
+const suggestionDetail = document.querySelector("#suggestion-detail");
 const decisionOverview = document.querySelector("#decision-overview");
 const reviewMessage = document.querySelector("#review-message");
 const requirementsList = document.querySelector("#requirements-list");
@@ -204,88 +206,208 @@ function acceptedLabel(decision) {
   return { keep: "Kept current", rewrite: "Rewrite accepted", remove: "Removed" }[decision.action] || "Accepted";
 }
 
-function bulletCard(entry, bullet, maps) {
-  const key = `${entry.entry_number}.${bullet.bullet_number}`;
-  const suggestion = maps.bullets.get(key);
-  if (!suggestion) {
-    return `<li class="suggestion-item"><div class="source-bullet"><span class="bullet-number">${bullet.bullet_number}</span><p>${escapeHtml(bullet.source_text)}</p></div></li>`;
-  }
-  const status = decisionStatus(bullet.decision, suggestion);
-  const revision = maps.revisions.get(key);
-  const requirement = suggestion.requirement_id ? maps.requirements.get(suggestion.requirement_id) : null;
-  const displayText = bullet.decision?.action === "rewrite" ? bullet.decision.accepted_text : suggestion.suggested_text;
-  return `
-    <li class="suggestion-item ${bullet.decision ? "is-decided" : ""} ${status === "removed" ? "is-removed" : ""}" data-suggestion-status="${status}" data-entry="${entry.entry_number}" data-bullet="${bullet.bullet_number}">
-      <div class="source-bullet"><span class="bullet-number">${bullet.bullet_number}</span><p>${escapeHtml(bullet.source_text)}</p></div>
-      <div class="suggestion-card action-${suggestion.action}">
-        <div class="suggestion-label-row">
-          <span class="suggestion-label">${escapeHtml(actionLabel(suggestion.action))}</span>
-          ${bullet.decision ? `<span class="decision-state">${escapeHtml(acceptedLabel(bullet.decision))}</span>` : ""}
-        </div>
-        ${displayText ? `<p class="suggested-copy">${escapeHtml(displayText)}</p>` : ""}
-        <p class="suggestion-reason">${escapeHtml(suggestion.reason)}</p>
-        ${revision ? `<div class="revision-pending"><strong>New suggestion requested</strong>${escapeHtml(revision.instruction)}</div>` : ""}
-        ${requirement ? `<button class="requirement-link" type="button" data-requirement="${escapeHtml(requirement.id)}">↗ ${escapeHtml(requirement.text)}</button>` : ""}
-        <div class="suggestion-actions">
-          <button class="mini-button primary" type="button" data-approve-bullet="${key}" ${revision ? "disabled" : ""}>${escapeHtml(revision ? "Waiting for revision" : approvalLabel(suggestion.action))}</button>
-          <button class="mini-button" type="button" data-keep-bullet="${key}">Keep current</button>
-          <button class="mini-button" type="button" data-other-bullet="${key}">Other…</button>
-        </div>
-      </div>
-    </li>
-  `;
+function reviewItemKey(item) {
+  return item.kind === "project"
+    ? `project-${item.entryNumber}`
+    : `bullet-${item.entryNumber}-${item.bulletNumber}`;
 }
 
-function projectCard(entry, maps) {
-  const suggestion = maps.projects.get(entry.entry_number);
-  if (!suggestion) return "";
-  const decision = entry.project_decision;
-  const requirement = suggestion.requirement_id ? maps.requirements.get(suggestion.requirement_id) : null;
-  const status = decision ? (decision.action === "exclude" ? "removed" : "accepted") : "unresolved";
-  return `
-    <div class="project-recommendation" data-suggestion-status="${status}" data-entry="${entry.entry_number}">
-      <div class="project-recommendation-head">
-        <strong>${escapeHtml(suggestion.action === "include" ? "Include recommended" : "Exclude recommended")}</strong>
-        ${decision ? `<span class="decision-state">${escapeHtml(decision.action === "include" ? "Included" : "Excluded")}</span>` : ""}
+function allReviewItems(session) {
+  const items = [];
+  session.entries.forEach((entry) => {
+    if (entry.is_project) {
+      items.push({ kind: "project", entryNumber: entry.entry_number, section: entry.section });
+      if (entry.project_decision?.action !== "include") return;
+    }
+    entry.bullets.forEach((bullet) => {
+      items.push({
+        kind: "bullet",
+        entryNumber: entry.entry_number,
+        bulletNumber: bullet.bullet_number,
+        section: entry.section,
+      });
+    });
+  });
+  return items;
+}
+
+function reviewItemStatus(session, item, maps = suggestionMaps(session)) {
+  const entry = session.entries.find((candidate) => candidate.entry_number === item.entryNumber);
+  if (item.kind === "project") {
+    if (!entry?.project_decision) return "unresolved";
+    return entry.project_decision.action === "exclude" ? "removed" : "accepted";
+  }
+  const bullet = entry?.bullets.find((candidate) => candidate.bullet_number === item.bulletNumber);
+  return decisionStatus(bullet?.decision, maps.bullets.get(`${item.entryNumber}.${item.bulletNumber}`));
+}
+
+function visibleReviewItems(session) {
+  const maps = suggestionMaps(session);
+  const items = allReviewItems(session);
+  if (state.filter === "all") return items;
+  return items.filter((item) => reviewItemStatus(session, item, maps) === state.filter);
+}
+
+function activeReviewItem(session) {
+  const items = visibleReviewItems(session);
+  if (!items.length) return { item: null, items, index: -1 };
+  const activeKey = state.activeReview ? reviewItemKey(state.activeReview) : null;
+  let index = items.findIndex((item) => reviewItemKey(item) === activeKey);
+  if (index < 0) index = items.findIndex((item) => ["unresolved", "needs_confirmation"].includes(reviewItemStatus(session, item)));
+  if (index < 0) index = 0;
+  state.activeReview = items[index];
+  return { item: items[index], items, index };
+}
+
+function statusLabel(status) {
+  return {
+    unresolved: "Needs review",
+    needs_confirmation: "Needs context",
+    accepted: "Approved",
+    kept: "Kept",
+    removed: "Removed",
+  }[status] || "Review";
+}
+
+function switchEvidencePanel(panelId) {
+  document.querySelectorAll(".evidence-tab").forEach((tab) => {
+    const selected = tab.dataset.panel === panelId;
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", String(selected));
+  });
+  document.querySelectorAll(".evidence-content").forEach((panel) => { panel.hidden = panel.id !== panelId; });
+}
+
+function renderSuggestionDetail(session, item, maps) {
+  if (!item || !session.suggestions) {
+    suggestionDetail.innerHTML = `<div class="panel-empty"><span>01</span><h2>${session.suggestions ? "No items in this view" : "Suggestions are being prepared"}</h2><p>${session.suggestions ? "Choose another status filter to continue reviewing." : "Your resume stays visible here while Codex prepares the complete recommendation set."}</p></div>`;
+    return;
+  }
+  const entry = session.entries.find((candidate) => candidate.entry_number === item.entryNumber);
+  if (item.kind === "project") {
+    const suggestion = maps.projects.get(entry.entry_number);
+    const requirement = suggestion?.requirement_id ? maps.requirements.get(suggestion.requirement_id) : null;
+    const status = reviewItemStatus(session, item, maps);
+    suggestionDetail.innerHTML = `
+      <p class="panel-kicker">Project decision</p>
+      <div class="panel-title-row"><h2>${escapeHtml(entry.title)}</h2><span class="review-status status-${status}">${escapeHtml(statusLabel(status))}</span></div>
+      <p class="panel-subtitle">${escapeHtml(entry.subtitle)} · ${escapeHtml(entry.date)}</p>
+      <div class="recommendation-block action-${escapeHtml(suggestion.action)}">
+        <span>${escapeHtml(suggestion.action === "include" ? "Include recommended" : "Exclude recommended")}</span>
+        <p>${escapeHtml(suggestion.reason)}</p>
       </div>
-      <p>${escapeHtml(suggestion.reason)}</p>
-      ${requirement ? `<button class="requirement-link" type="button" data-requirement="${escapeHtml(requirement.id)}">↗ ${escapeHtml(requirement.text)}</button>` : ""}
-      <div class="project-actions">
-        <button class="mini-button primary" type="button" data-project-action="${entry.entry_number}:${suggestion.action}">${escapeHtml(suggestion.action === "include" ? "Include project" : "Exclude project")}</button>
-        <button class="mini-button" type="button" data-project-action="${entry.entry_number}:include">Include</button>
-        <button class="mini-button" type="button" data-project-action="${entry.entry_number}:exclude">Exclude</button>
+      ${requirement ? `<button class="requirement-link" type="button" data-requirement="${escapeHtml(requirement.id)}">View matching requirement →</button>` : ""}
+      <div class="panel-actions">
+        <button class="button button-primary" type="button" data-project-action="${entry.entry_number}:include">Include project</button>
+        <button class="button button-quiet" type="button" data-project-action="${entry.entry_number}:exclude">Exclude project</button>
       </div>
+      <p class="panel-footnote">This choice affects only the tailored resume. Your master project inventory stays unchanged.</p>
+    `;
+    return;
+  }
+  const bullet = entry.bullets.find((candidate) => candidate.bullet_number === item.bulletNumber);
+  const key = `${entry.entry_number}.${bullet.bullet_number}`;
+  const suggestion = maps.bullets.get(key);
+  const revision = maps.revisions.get(key);
+  const requirement = suggestion?.requirement_id ? maps.requirements.get(suggestion.requirement_id) : null;
+  const status = reviewItemStatus(session, item, maps);
+  const displayText = bullet.decision?.action === "rewrite" ? bullet.decision.accepted_text : suggestion.suggested_text;
+  suggestionDetail.innerHTML = `
+    <p class="panel-kicker">${escapeHtml(entry.section)} · Bullet ${bullet.bullet_number}</p>
+    <div class="panel-title-row"><h2>${escapeHtml(entry.title)}</h2><span class="review-status status-${status}">${escapeHtml(statusLabel(status))}</span></div>
+    <div class="copy-block source-copy"><span>Current wording</span><p>${escapeHtml(bullet.source_text)}</p></div>
+    <div class="copy-block recommendation-copy action-${escapeHtml(suggestion.action)}">
+      <span>${escapeHtml(actionLabel(suggestion.action))}</span>
+      ${displayText ? `<p>${escapeHtml(displayText)}</p>` : `<p>${escapeHtml(suggestion.action === "remove" ? "Remove this bullet from the tailored version." : "Keep the current wording.")}</p>`}
+    </div>
+    <div class="reason-block"><span>Why</span><p>${escapeHtml(suggestion.reason)}</p></div>
+    ${revision ? `<div class="revision-pending"><strong>New suggestion requested</strong>${escapeHtml(revision.instruction)}</div>` : ""}
+    ${requirement ? `<button class="requirement-link" type="button" data-requirement="${escapeHtml(requirement.id)}">View matching requirement →</button>` : ""}
+    <div class="panel-actions">
+      <button class="button button-primary" type="button" data-approve-bullet="${key}" ${revision ? "disabled" : ""}>${escapeHtml(revision ? "Waiting for revision" : approvalLabel(suggestion.action))}</button>
+      <button class="button button-quiet" type="button" data-keep-bullet="${key}">Keep current</button>
+      <button class="button button-quiet" type="button" data-other-bullet="${key}">Edit or ask AI</button>
     </div>
   `;
 }
 
-function renderSuggestionDocument(session) {
-  const groups = groupedEntries(session.entries);
-  const maps = suggestionMaps(session);
-  suggestionContent.innerHTML = groups.map((group) => `
-    <section class="suggestion-section" id="${sectionId(group.section, "review-section")}">
-      <div class="suggestion-section-heading"><h3>${escapeHtml(group.section)}</h3><span>${group.entries.length} entries</span></div>
-      ${group.entries.map((entry) => {
-        const projectDecision = entry.project_decision?.action;
-        const bulletsDecided = entry.bullets.filter((bullet) => bullet.decision).length;
-        const gated = entry.is_project && projectDecision !== "include";
-        return `
-          <article class="suggestion-entry ${projectDecision === "exclude" ? "is-excluded" : ""}" data-entry-status="${projectDecision === "exclude" ? "removed" : "mixed"}">
-            <header class="suggestion-entry-header">
-              <div><h4>${escapeHtml(entry.title)}</h4><p>${escapeHtml(entry.subtitle)} · ${escapeHtml(entry.date)}</p></div>
-              <div class="entry-progress-stack">
-                <span class="entry-progress">${bulletsDecided} of ${entry.bullets.length} bullets decided</span>
-                ${session.suggestions && !gated ? `<button class="mini-button" type="button" data-approve-entry="${entry.entry_number}">Use entry recommendations</button>` : ""}
-              </div>
-            </header>
-            ${entry.is_project ? projectCard(entry, maps) : ""}
-            ${gated ? `<p class="project-gate">Choose Include to review this project's bullet suggestions.</p>` : `<ol class="suggestion-list">${entry.bullets.map((bullet) => bulletCard(entry, bullet, maps)).join("")}</ol>`}
-          </article>
-        `;
-      }).join("")}
+function renderProjectShortlist(session, activeItem, maps) {
+  const projects = session.entries.filter((entry) => entry.is_project);
+  return `
+    <section class="resume-focus-entry project-shortlist" aria-label="Project shortlist">
+      <header class="focus-entry-header">
+        <div><p class="eyebrow">Projects</p><h3>Choose the portfolio for this resume</h3><p>Review every project here before editing included project bullets.</p></div>
+      </header>
+      <div class="project-choice-list">
+        ${projects.map((entry) => {
+          const suggestion = maps.projects.get(entry.entry_number);
+          const projectItem = { kind: "project", entryNumber: entry.entry_number, section: entry.section };
+          const status = reviewItemStatus(session, projectItem, maps);
+          const active = activeItem.entryNumber === entry.entry_number;
+          return `
+            <button class="project-choice ${active ? "is-active" : ""}" type="button" data-review-key="${reviewItemKey(projectItem)}">
+              <span class="project-choice-main"><strong>${escapeHtml(entry.title)}</strong><small>${escapeHtml(entry.subtitle)}</small></span>
+              <span class="project-choice-recommendation">${escapeHtml(!suggestion ? "Waiting for suggestion" : suggestion.action === "include" ? "Include recommended" : "Exclude recommended")}</span>
+              <span class="review-status status-${status}">${escapeHtml(statusLabel(status))}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
     </section>
-  `).join("");
-  applyFilter();
+  `;
+}
+
+function renderFocusedEntry(session, activeItem, maps) {
+  if (activeItem.kind === "project") return renderProjectShortlist(session, activeItem, maps);
+  const entry = session.entries.find((candidate) => candidate.entry_number === activeItem.entryNumber);
+  const bulletsDecided = entry.bullets.filter((bullet) => bullet.decision).length;
+  const canApproveEntry = session.suggestions && (!entry.is_project || entry.project_decision?.action === "include");
+  return `
+    <article class="resume-focus-entry">
+      <header class="focus-entry-header">
+        <div><p class="eyebrow">${escapeHtml(entry.section)}</p><h3>${escapeHtml(entry.title)}</h3><p>${escapeHtml(entry.subtitle)} · ${escapeHtml(entry.date)}</p></div>
+        <div class="focus-progress"><span>${bulletsDecided}/${entry.bullets.length} reviewed</span>${canApproveEntry ? `<button class="mini-button" type="button" data-approve-entry="${entry.entry_number}">Use entry recommendations</button>` : ""}</div>
+      </header>
+      <ol class="resume-review-list">
+        ${entry.bullets.map((bullet) => {
+          const item = { kind: "bullet", entryNumber: entry.entry_number, bulletNumber: bullet.bullet_number, section: entry.section };
+          const status = reviewItemStatus(session, item, maps);
+          const active = activeItem.bulletNumber === bullet.bullet_number;
+          return `
+            <li>
+              <button class="resume-bullet-button ${active ? "is-active" : ""} ${status === "removed" ? "is-removed" : ""}" type="button" data-review-key="${reviewItemKey(item)}">
+                <span class="bullet-number">${bullet.bullet_number}</span>
+                <span class="resume-bullet-copy">${escapeHtml(bullet.source_text)}</span>
+                <span class="review-status status-${status}">${escapeHtml(statusLabel(status))}</span>
+              </button>
+            </li>
+          `;
+        }).join("")}
+      </ol>
+      <p class="focus-hint">Select a bullet to review its recommendation in the panel.</p>
+    </article>
+  `;
+}
+
+function renderSuggestionDocument(session) {
+  const maps = suggestionMaps(session);
+  const { item, items, index } = activeReviewItem(session);
+  const navigator = document.querySelector("#review-navigator");
+  navigator.hidden = !session.suggestions || !item;
+  if (!item) {
+    suggestionContent.innerHTML = `<div class="empty-review-filter"><h3>No items match this filter</h3><p>Choose another status above to continue.</p></div>`;
+    document.querySelector("#review-position").textContent = "No items";
+    document.querySelector("#review-focus-label").textContent = "Resume review";
+    renderSuggestionDetail(session, null, maps);
+    return;
+  }
+  const entry = session.entries.find((candidate) => candidate.entry_number === item.entryNumber);
+  document.querySelector("#review-position").textContent = `Item ${index + 1} of ${items.length}`;
+  document.querySelector("#review-focus-label").textContent = item.kind === "project" ? "Project selection" : `${entry.title} · Bullet ${item.bulletNumber}`;
+  document.querySelector("#previous-review-item").disabled = index === 0;
+  document.querySelector("#next-review-item").disabled = index === items.length - 1;
+  suggestionContent.innerHTML = renderFocusedEntry(session, item, maps);
+  renderSuggestionDetail(session, item, maps);
 }
 
 function renderWaitingSession(session) {
@@ -299,7 +421,7 @@ function renderWaitingSession(session) {
   ` : `
     <div class="analysis-waiting">
       <h3>Ready for grounded suggestions</h3>
-      <p>This session is saved. Ask Codex to analyze it; the complete recommendation set will appear inline across your resume.</p>
+      <p>This session is saved. Ask Codex to analyze it; every recommendation will be ready in the focused review panel.</p>
       <div class="waiting-actions">
         <button class="button button-primary" id="copy-codex-request" type="button">Copy request for Codex</button>
         <button class="button button-quiet" id="waiting-refresh" type="button">Check for suggestions</button>
@@ -380,7 +502,7 @@ function updateReviewControls(session) {
   const unresolved = session.decision_counts.unresolved;
   document.querySelector("#undo-button").disabled = !session.history.length;
   const previewReady = session.preview?.report?.pages === 1;
-  document.querySelector("#build-preview").disabled = !hasSuggestions || session.status === "stale";
+  document.querySelector("#build-preview").disabled = !hasSuggestions || unresolved !== 0 || session.status === "stale";
   document.querySelector("#export-button").disabled = !hasSuggestions || unresolved !== 0 || !previewReady || session.status === "stale";
   document.querySelector("#export-note").textContent = !hasSuggestions
     ? "Prepare suggestions before export."
@@ -406,8 +528,17 @@ function renderStages(session) {
 function showSession(session) {
   const changedSession = state.session?.session_id !== session.session_id;
   state.session = session;
-  if (changedSession) state.filter = "all";
+  if (changedSession) {
+    state.filter = "all";
+    state.activeReview = session.next_unresolved ? {
+      kind: session.next_unresolved.kind,
+      entryNumber: session.next_unresolved.entry_number,
+      bulletNumber: session.next_unresolved.bullet_number,
+      section: session.entries.find((entry) => entry.entry_number === session.next_unresolved.entry_number)?.section,
+    } : null;
+  }
   setView("review");
+  if (changedSession) switchEvidencePanel("suggestion-panel");
   document.querySelector("#review-role").textContent = session.job.role;
   document.querySelector("#review-company").textContent = session.job.company;
   const analysisStatus = document.querySelector("#analysis-status");
@@ -437,32 +568,10 @@ function showSession(session) {
     renderPageFit(session.preview);
   }
   updateReviewControls(session);
-  if (changedSession && session.next_unresolved) {
-    window.requestAnimationFrame(() => {
-      const next = session.next_unresolved;
-      const selector = next.kind === "bullet"
-        ? `.suggestion-item[data-entry="${next.entry_number}"][data-bullet="${next.bullet_number}"]`
-        : `.project-recommendation[data-entry="${next.entry_number}"]`;
-      document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  }
 }
 
 function applyFilter() {
-  if (!state.session?.suggestions) return;
-  document.querySelectorAll(".suggestion-item[data-suggestion-status]").forEach((item) => {
-    item.hidden = state.filter !== "all" && item.dataset.suggestionStatus !== state.filter;
-  });
-  document.querySelectorAll(".project-recommendation[data-suggestion-status]").forEach((item) => {
-    item.hidden = state.filter !== "all" && item.dataset.suggestionStatus !== state.filter;
-  });
-  document.querySelectorAll(".suggestion-entry").forEach((entry) => {
-    if (state.filter === "all") { entry.hidden = false; return; }
-    entry.hidden = !entry.querySelector(`[data-suggestion-status="${state.filter}"]:not([hidden])`);
-  });
-  document.querySelectorAll(".suggestion-section").forEach((section) => {
-    section.hidden = !section.querySelector(".suggestion-entry:not([hidden])");
-  });
+  if (state.session) renderSuggestionDocument(state.session);
 }
 
 async function reloadCurrentSession() {
@@ -477,11 +586,16 @@ async function reloadCurrentSession() {
 }
 
 async function saveDecisions(body) {
+  const previous = state.activeReview;
   try {
     const session = await api(`/api/sessions/${state.session.session_id}/decisions`, {
       method: "POST",
       body: JSON.stringify(body),
     });
+    const items = allReviewItems(session);
+    const currentIndex = previous ? items.findIndex((item) => reviewItemKey(item) === reviewItemKey(previous)) : -1;
+    const ordered = currentIndex < 0 ? items : [...items.slice(currentIndex + 1), ...items.slice(0, currentIndex + 1)];
+    state.activeReview = ordered.find((item) => ["unresolved", "needs_confirmation"].includes(reviewItemStatus(session, item))) || previous;
     showSession(session);
     showToast("Decision saved.");
   } catch (error) {
@@ -494,14 +608,26 @@ function findBulletSuggestion(key) {
 }
 
 function handleSuggestionAction(event) {
+  const reviewTarget = event.target.closest("[data-review-key]");
   const approve = event.target.closest("[data-approve-bullet]");
   const keep = event.target.closest("[data-keep-bullet]");
   const other = event.target.closest("[data-other-bullet]");
   const project = event.target.closest("[data-project-action]");
   const approveEntry = event.target.closest("[data-approve-entry]");
   const requirement = event.target.closest("[data-requirement]");
+  if (reviewTarget) {
+    const item = allReviewItems(state.session).find((candidate) => reviewItemKey(candidate) === reviewTarget.dataset.reviewKey);
+    if (item) {
+      state.activeReview = item;
+      renderSuggestionDocument(state.session);
+      switchEvidencePanel("suggestion-panel");
+      evidencePanel.classList.add("is-open");
+      document.querySelector("#toggle-evidence").setAttribute("aria-expanded", "true");
+    }
+    return;
+  }
   if (requirement) {
-    document.querySelector('[data-panel="requirements-panel"]').click();
+    switchEvidencePanel("requirements-panel");
     evidencePanel.classList.add("is-open");
     document.querySelector("#toggle-evidence").setAttribute("aria-expanded", "true");
     document.querySelector(`#requirement-${CSS.escape(requirement.dataset.requirement)}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -779,7 +905,17 @@ masterSectionNav.addEventListener("click", (event) => {
 });
 document.querySelector("#review-section-nav").addEventListener("click", (event) => {
   const button = event.target.closest("[data-review-section]");
-  if (button) document.querySelector(`#${button.dataset.reviewSection}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!button || !state.session) return;
+  state.filter = "all";
+  renderOverview(state.session);
+  const item = allReviewItems(state.session).find(
+    (candidate) => sectionId(candidate.section, "review-section") === button.dataset.reviewSection,
+  );
+  if (item) {
+    state.activeReview = item;
+    renderSuggestionDocument(state.session);
+    switchEvidencePanel("suggestion-panel");
+  }
 });
 document.querySelector("#job-form").addEventListener("submit", createSession);
 document.querySelector("#open-tailor").addEventListener("click", openTailorPanel);
@@ -816,6 +952,23 @@ document.querySelector("#sessions-list").addEventListener("click", async (event)
 });
 
 suggestionContent.addEventListener("click", handleSuggestionAction);
+evidencePanel.addEventListener("click", handleSuggestionAction);
+document.querySelector("#previous-review-item").addEventListener("click", () => {
+  const { items, index } = activeReviewItem(state.session);
+  if (index > 0) {
+    state.activeReview = items[index - 1];
+    renderSuggestionDocument(state.session);
+    switchEvidencePanel("suggestion-panel");
+  }
+});
+document.querySelector("#next-review-item").addEventListener("click", () => {
+  const { items, index } = activeReviewItem(state.session);
+  if (index >= 0 && index < items.length - 1) {
+    state.activeReview = items[index + 1];
+    renderSuggestionDocument(state.session);
+    switchEvidencePanel("suggestion-panel");
+  }
+});
 reviewMessage.addEventListener("click", (event) => {
   if (event.target.closest("#copy-codex-request")) copyCodexRequest();
   if (event.target.closest("#waiting-refresh")) reloadCurrentSession();
@@ -829,9 +982,15 @@ reviewMessage.addEventListener("click", (event) => {
   if (jump) {
     state.filter = "all";
     renderOverview(state.session);
-    applyFilter();
     const [entryNumber, bulletNumber] = jump.dataset.jumpBullet.split(".");
-    document.querySelector(`.suggestion-item[data-entry="${entryNumber}"][data-bullet="${bulletNumber}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    state.activeReview = {
+      kind: "bullet",
+      entryNumber: Number(entryNumber),
+      bulletNumber: Number(bulletNumber),
+      section: state.session.entries.find((entry) => entry.entry_number === Number(entryNumber))?.section,
+    };
+    renderSuggestionDocument(state.session);
+    switchEvidencePanel("suggestion-panel");
   }
 });
 decisionOverview.addEventListener("click", (event) => {
@@ -843,10 +1002,7 @@ decisionOverview.addEventListener("click", (event) => {
 });
 
 document.querySelectorAll(".evidence-tab").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".evidence-tab").forEach((tab) => tab.classList.toggle("is-active", tab === button));
-    document.querySelectorAll(".evidence-content").forEach((panel) => { panel.hidden = panel.id !== button.dataset.panel; });
-  });
+  button.addEventListener("click", () => switchEvidencePanel(button.dataset.panel));
 });
 
 document.querySelector("#other-form").addEventListener("submit", async (event) => {

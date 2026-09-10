@@ -7,6 +7,7 @@ SOURCE_DIR_ARG="${1:-master}"
 SOURCE_NAME="_resume.tex"
 OUTPUT_NAME="Morgan_Le_Resume.pdf"
 SHARED_LATEX_DIR="$REPO_ROOT/shared/latex"
+NORMALIZER="$REPO_ROOT/scripts/normalize_pdf.py"
 
 if (( $# > 1 )); then
   echo "Usage: $0 [resume-folder]" >&2
@@ -14,8 +15,8 @@ if (( $# > 1 )); then
   exit 2
 fi
 
-SOURCE_DIR="$(cd "$REPO_ROOT/$SOURCE_DIR_ARG" && pwd -P)"
-case "$SOURCE_DIR" in
+REQUESTED_DIR="$(cd "$REPO_ROOT/$SOURCE_DIR_ARG" && pwd -P)"
+case "$REQUESTED_DIR" in
   "$REPO_ROOT"|"$REPO_ROOT"/*) ;;
   *)
     echo "Resume folder must be inside $REPO_ROOT." >&2
@@ -23,13 +24,22 @@ case "$SOURCE_DIR" in
     ;;
 esac
 
-if [[ ! -f "$SOURCE_DIR/$SOURCE_NAME" ]]; then
-  echo "Resume source not found: $SOURCE_DIR/$SOURCE_NAME" >&2
+if [[ -f "$REQUESTED_DIR/$SOURCE_NAME" ]]; then
+  SOURCE_DIR="$REQUESTED_DIR"
+elif [[ -f "$REQUESTED_DIR/Jake/$SOURCE_NAME" ]]; then
+  SOURCE_DIR="$REQUESTED_DIR/Jake"
+else
+  echo "Resume source not found in $REQUESTED_DIR or its default Jake folder." >&2
   exit 2
 fi
 
 if [[ ! -d "$SHARED_LATEX_DIR" ]]; then
   echo "Shared LaTeX support directory not found: $SHARED_LATEX_DIR" >&2
+  exit 2
+fi
+
+if [[ ! -f "$NORMALIZER" ]]; then
+  echo "PDF normalizer not found: $NORMALIZER" >&2
   exit 2
 fi
 
@@ -60,5 +70,20 @@ cp "$SOURCE_DIR/$SOURCE_NAME" "$BUILD_DIR/$SOURCE_NAME"
   "$TECTONIC_BIN" --keep-logs --outdir "$BUILD_DIR" "$SOURCE_NAME"
 )
 
-cp "$BUILD_DIR/${SOURCE_NAME%.tex}.pdf" "$OUTPUT_PATH"
+if [[ -n "${RESUME_PYTHON_BIN:-}" ]]; then
+  PYTHON_BIN="$RESUME_PYTHON_BIN"
+elif [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
+  PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="$(command -v python3)"
+else
+  echo "Python 3 is required for PDF compatibility normalization." >&2
+  exit 2
+fi
+
+RAW_PDF="$BUILD_DIR/${SOURCE_NAME%.tex}.pdf"
+NORMALIZED_PDF="$BUILD_DIR/$OUTPUT_NAME"
+"$PYTHON_BIN" "$NORMALIZER" "$RAW_PDF" "$NORMALIZED_PDF"
+
+cp "$NORMALIZED_PDF" "$OUTPUT_PATH"
 echo "Created $OUTPUT_PATH"

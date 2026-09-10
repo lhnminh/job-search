@@ -1,0 +1,149 @@
+\documentclass[11pt,a4paper,sans]{moderncv} % Font sizes: 10, 11, or 12; paper sizes: a4paper, letterpaper, a5paper, legalpaper, executivepaper or landscape; font families: sans or roman
+
+\moderncvstyle{classic} % CV theme - options include: 'casual' (default), 'classic', 'oldstyle' and 'banking'
+\moderncvcolor{black} % CV color - options include: 'blue' (default), 'orange', 'green', 'red', 'purple', 'grey' and 'black'
+\usepackage{multicol}
+\usepackage{fontawesome}
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+
+%------------------------------------------------------
+\usepackage[scale=0.92]{geometry}
+
+% HREF CONFIG
+%------------------------------------------------------
+% \hypersetup{
+%   colorlinks=true,
+%   urlcolor=blue
+% }
+
+% CUSTOM VIEW
+%--------------------------------------------------------------------------------
+\renewcommand{\labelitemi}{\textbullet}
+
+\newcommand*{\customcventry}[5][0.8em]{
+%   \vfill\noindent
+  \begin{tabular}{@{}l}
+    \fontsize{12}{12}{\bfseries #2}, {\itshape #3}
+  \end{tabular}
+  \hfill% move it to the right
+  \begin{tabular}{l@{}}
+    \fontsize{12}{12}{\itshape #4}
+  \end{tabular}
+  \ifx&#5&%
+  \else{
+    \par\addvspace{0.15em}
+    \begin{minipage}{\maincolumnwidth}%
+      #5%
+    \end{minipage}}\fi%
+  \par\addvspace{#1}}
+
+\newcommand*{\customcawards}[4]{
+%   \vfill\noindent
+  \begin{tabular}{@{}l}
+    {#2}
+  \end{tabular}
+  \hfill% move it to the right
+  \begin{tabular}{l@{}}
+      \bfseries \itshape #3
+  \end{tabular}
+  \ifx&#4&%
+  \else{\\%
+    \begin{minipage}{\maincolumnwidth}%
+      #4%
+    \end{minipage}}\fi%
+  \par\addvspace{#1}}
+
+\newcommand*{\cheat}[1]{
+    \addvspace{-100em}
+    \color{white}\fontsize{1}{1}\selectfont #1
+}
+
+%----------------------------------------------------------------------------------------
+% NAME AND CONTACT INFORMATION SECTION
+%----------------------------------------------------------------------------------------
+
+\firstname{Morgan} % Your first name
+\familyname{Le} % Your last name
+\title{\href{https://lhnminh.github.io/}{lhnminh.github.io}}
+\mobile{(347) 774 6979}
+\email{morgan.hn.le@gmail.com}
+\github{https://github.com/lhnminh}{github.com/lhnminh}
+\linkedin{https://www.linkedin.com/in/morganhle/}{linkedin.com/in/morganhle}
+
+\begin{document}
+
+\makecvtitle
+
+%-----------------------------------------------------
+% EDUCATION SECTION
+%-----------------------------------------------------
+\section{Education}
+{\customcventry{Columbia University}{\itshape Master's in Data Science}{August 2026 - Dec 2027}{}
+}
+
+{\customcventry{University of Rochester}
+{\itshape Bachelor in Information Systems \& Economics}
+{August 2019 - May 2023}
+{\small \textit{Minor in Computer Science}\\[-1em]
+\begin{itemize}
+  \item {\bfseries GPA:} 3.8/4.0
+  \item {\bfseries Relevant Coursework:} Predictive Analysis, Econometrics, Database System, Advanced Algorithms
+\end{itemize}
+}}
+
+%-----------------------------------------------------
+% WORK EXPERIENCE SECTION
+%-----------------------------------------------------
+
+\section{Relevant Experience}
+
+{\customcventry{\href{https://en.vnu.edu.vn/}{Vietnam National University}}{\itshape Research Assistant}{Jun 2026 - Aug 2026}
+{\begin{itemize}
+    \item Benchmarked and fine-tuned deep learning models in PyTorch on Vietnam-scale datasets, evaluating model performance against existing baselines.
+    \item Built Python workflows for geospatial feature engineering, model training, and evaluation, integrating a Geographical Random Forest model into the existing research pipeline.
+    \item {\bfseries Technologies:} Python, MLflow, PyTorch, GeoPandas, QGIS
+\end{itemize}}}
+
+{\customcventry{\href{https://www.sea.com/products/shopee}{Shopee}}{\itshape Product Operations and Analytics Associate}{Jun 2025 - Jun 2026}
+{\begin{itemize}
+    \item Applied statistical analysis to seller performance, campaign effectiveness, and regional sales trends, informing promotional strategies that contributed to over \$100K in revenue and 25\% YoY growth.
+    \item Engineered automated data pipelines to consolidate sales and P\&L data from multiple sources, reducing manual processing time by 20\%.
+    \item Monitored workflow execution and service performance across a regional team of 10+ internal personnel and BPO partners, coordinating day-to-day delivery to maintain operational efficiency and service quality.
+    \item {\bfseries Technologies:} Python, SQL, Looker, Google Apps Script
+\end{itemize}}}
+
+{\customcventry{\href{https://www.bcg.com/about/overview}{Boston Consulting Group (BCG)}}{\itshape Consultant}{Jan 2025 - Jun 2025}
+{\begin{itemize}
+    \item Translated business problems into data-driven analyses with cross-functional client teams, supporting go-to-market strategy for a \$10B infrastructure initiative.
+    \item Developed pricing, market sizing, and financial models to evaluate commercial opportunities, informing executive-level strategy and decision-making.
+    \item {\bfseries Technologies:} pandas, SQL, Excel
+\end{itemize}}}
+
+{\customcventry{\href{https://www.onepeloton.com/company}{Peloton}}{\itshape Business Operations Analyst II}{Dec 2023 - Jun 2024}
+{\begin{itemize}
+    \item Led end-to-end procurement initiatives across IT, Professional Services, and CapEx, negotiating supplier terms and applying spend analytics to achieve \$800K in annual savings and identify \$2M in revenue opportunities.
+    \item Designed and implemented BI dashboards using Looker, helping business unit leaders identify \$10M in savings.
+    \item {\bfseries Technologies:} Python, BigQuery, Looker, Coupa, pandas
+\end{itemize}}}
+
+{\customcventry{\href{https://www.samsung.com/us/about-us/our-business/}{Samsung Electronics America}}{\itshape Supply Chain Data Ops Analyst}{May 2023 - Dec 2023}
+{\begin{itemize}
+    \item Managed procurement operations supporting over \$1M in daily purchasing volume across 100+ global material supply chains, automating purchase order tracking and reporting workflows.
+    \item Increased analyst productivity by 10\% by optimizing Excel-based tools and automating data processing workflows.
+    \item {\bfseries Technologies:} Python, SQL, SAP
+\end{itemize}}}
+
+%-----------------------------------------------------
+% PROJECT SECTION
+%-----------------------------------------------------
+
+\section{Projects}
+
+{\customcventry{\href{https://github.com/lhnminh/Kaggle-Housing-Prices-Comp}{Housing Prices Competition}}{\href{https://www.kaggle.com/competitions/home-data-for-ml-course/overview}{Kaggle Competition}}{Rank 403/5425 (Top 8\%)}
+{\begin{itemize}
+    \item Built an end-to-end machine learning workflow to predict housing prices, covering data cleaning, feature selection, model training, and batch prediction.
+    \item Designed a reusable preprocessing pipeline that handles missing values and categorical variables consistently across training and inference.
+    \item {\bfseries Technologies:} Python, scikit-learn, XGBoost
+\end{itemize}}}
+
+\end{document}
