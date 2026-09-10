@@ -7,10 +7,18 @@ This repository maintains one comprehensive resume reference and multiple applic
 Before editing, identify which of these the user is requesting:
 
 1. A change to the comprehensive reference in `master/resume.md`.
-2. A change to an existing tailored version.
+2. A change to an existing tailored version (only when the user explicitly points to a specific file or folder).
 3. A new tailored version for a job, company, or discipline.
 
 Do not treat these as interchangeable.
+
+### Do Not Inspect `applications/`
+
+The `applications/` directory contains ephemeral, transient tailored resumes that the user periodically deletes.
+- **NEVER** inspect, read, search, grep, list, or examine the `applications/` directory when asked to tailor a resume. Inspecting it is a waste of time.
+- `applications/` is strictly a write destination for generated outputs (e.g., `applications/<company-role>/`), never an input, example catalog, or reference source.
+- Reference facts, projects, and skills come **exclusively** from `master/resume.md`, and starting track baselines come **exclusively** from `pre-made/`.
+- Never look for past applications or base a new resume on a past tailored version in `applications/`.
 
 ## Canonical Reference: `master/resume.md`
 
@@ -36,8 +44,9 @@ The repo-specific `tailor-resume` skill is the interactive workflow. It follows 
 - Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat, terminal chat interface, or require a separate API key.
 - The local Resume Workspace may present that same workflow visually. Its state belongs under the gitignored `.resume/webapp/` directory, and AI suggestions must still come from the active Codex conversation through the workspace bridge or registered WebMCP tools. The web server must not start a nested model session.
 - **Primary Tailoring Workflow (Fast Markdown Diff)**:
-  - When tailoring for an application, select the closest base `resume.md` from `pre-made/` (or `master/resume.md`).
-  - Create the tailored version in `<company-role>/resume.md` (or `applications/<company-role>/resume.md`).
+  - Do NOT inspect, read, or search the `applications/` folder (it contains transient files and is never a reference source).
+  - Select the closest base `resume.md` directly from `pre-made/` (or `master/resume.md`).
+  - Create the tailored version in `applications/<company-role>/resume.md`.
   - Present a unified in-chat Markdown diff and concise bullet/skill rationale against the base resume.
   - The user reviews the diff directly in chat or using `python scripts/diff_resume.py <base> <target>` / native IDE diff viewers.
   - Upon user approval or targeted tweaks, compile to PDF using `python scripts/md_to_latex.py <target>/resume.md --template jake --build` (or `vmock` if space is tight) and verify 1-page A4 compliance.
@@ -109,6 +118,7 @@ Use `scripts/md_to_latex.py` to compile `resume.md` to any template (`jake`, `vm
 - Preserve every verified work position with at least one substantive bullet. Allocate additional bullets to the roles most relevant to the job description, and consolidate repeated technology lists before removing a position.
 - Treat work experience as mandatory coverage and projects as a selective portfolio. Never drop a work position through the project-selection workflow.
 - Resume variants created by the interactive skill must be exactly one A4 page.
+- **Do not inspect `applications/`**: Never look at, search, grep, or read files in `applications/` to find previous versions, context, or examples. They are transient and periodically deleted. All tailoring references come strictly from `pre-made/` and `master/resume.md`.
 
 ## Projects Are Additive
 
@@ -163,7 +173,7 @@ For the master source of truth, multiple pages are acceptable. Use clean page bo
 Follow this sequence and explain changes step by step:
 
 1. Read this file and inspect `git status`.
-2. Identify whether the target is the general reference, an existing variant, or a new variant.
+2. Identify whether the target is the general reference, an existing variant, or a new variant. For a new variant, do NOT inspect or search `applications/` (it is transient); select base content exclusively from `pre-made/` or `master/resume.md`.
 3. Read all supplied attachments completely.
 4. State the intended replace-versus-append behavior before editing.
 5. Preserve unrelated user changes and resume content.

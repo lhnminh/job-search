@@ -36,7 +36,7 @@ class ResumeValidationTests(unittest.TestCase):
     def test_parses_reference_entries(self) -> None:
         entries = parse_resume(self.source)
         self.assertEqual(11, len(entries))
-        self.assertEqual(32, sum(len(entry.bullets) for entry in entries))
+        self.assertEqual(31, sum(len(entry.bullets) for entry in entries))
 
     def test_parses_jake_entries_and_bullets(self) -> None:
         source = r"""

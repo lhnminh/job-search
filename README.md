@@ -7,7 +7,7 @@ This repository turns a comprehensive LaTeX resume into job-specific, one-page A
 ### Repository structure
 
 ```text
-applications/                   Tailored job applications (e.g. applications/<company-role>/)
+applications/                   Ephemeral tailored applications (output destination; periodically deleted)
   <company-role>/
     resume.md                   Tailored Markdown resume
     cover_letter.md             Optional tailored cover letter
@@ -110,7 +110,7 @@ Use $tailor-resume to tailor my resume for this job description:
 
 Codex will:
 
-1. Read the complete source resume and job description.
+1. Read the source resume (`pre-made/<track>` or `master/resume.md`) and job description without inspecting the ephemeral `applications/` folder.
 2. Propose a lowercase, hyphenated folder name.
 3. Review every education item and work role, keeping all verified work positions represented.
 4. Show all projects together and ask you to include or exclude each one.

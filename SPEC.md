@@ -32,7 +32,7 @@ The repo-specific skill lives at `.agents/skills/tailor-resume/`. It is the only
 The user invokes `$tailor-resume` and pastes a job description in the Codex conversation. The skill then:
 
 1. Uses the active repository-aware Codex conversation; it does not start a nested Codex thread.
-2. For a new session, reads the complete master resume and job description without changing the source.
+2. For a new session, reads the complete master resume and job description without changing the source. Never inspects or searches the ephemeral `applications/` folder.
 3. Creates a gitignored decision ledger containing parsed source-order entries and a master hash for resumability.
 4. Walks through Education and Relevant Experience entry by entry. Every education item and verified job is shown with all of its numbered bullets and Codex recommendations together. All work positions remain represented; the contact header is excluded, while entry headers are locked context.
 5. Before project bullet review, shows a single shortlist containing every verified project, gives one job-specific Include or Exclude recommendation per project, and requires an explicit selection for each. Only included projects proceed to bullet review; excluding a project is an explicit entry-level removal from the tailored version.

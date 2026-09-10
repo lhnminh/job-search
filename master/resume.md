@@ -6,13 +6,12 @@
 
 ### Columbia University | Master's in Data Science | New York, NY
 *August 2026 – Dec 2027*
-- **GPA:** Incoming
+- **Relevant Coursework:** Machine Learning, Advanced Algorithm, Statistical Inference & Modelling, Natural Language Processing, Computer Systems
 
 ### University of Rochester | Bachelor in Information Systems & Economics | Rochester, NY
 *August 2019 – May 2023*
 - *Minor in Computer Science*
 - **GPA:** 3.8/4.0
-- **Relevant Coursework:** Advanced Algorithms, Database System, Predictive Analysis, Econometrics
 
 ## Relevant Experience
 

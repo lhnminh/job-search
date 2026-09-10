@@ -7,6 +7,8 @@ description: Tailor, review, and build application-specific resumes in this repo
 
 Work directly in the current Codex or Antigravity conversation. Follow `AGENTS.md`; do not create another chat or call another model.
 
+> **CRITICAL RULE**: Do NOT inspect, read, list, grep, or search the `applications/` directory. Resumes in `applications/` are ephemeral and periodically deleted by the user; browsing them is a waste of time. All tailoring references come exclusively from `pre-made/` (for track baselines) and `master/resume.md` (for verified facts, projects, and skills). `applications/` is strictly a write destination.
+
 ## Primary Mode: Fast 1-Turn Batch Proposal & Diff Review
 
 When a user provides a job description (JD) and requests a targeted resume:
@@ -14,13 +16,14 @@ When a user provides a job description (JD) and requests a targeted resume:
 ### 1. Select the Base Track & Target Path
 Identify the best starting base from `pre-made/`:
 - `pre-made/finance-consulting` (Consulting, Corporate Strategy, BizOps, Finance)
+- `pre-made/forward-deployed-engineer` (Forward Deployed, Solutions Engineering, Technical PM)
 - `pre-made/product-decision-data-science` (Product Data Science, Decision Science, Analytics)
+- `pre-made/quantitative-research-finance` (Quant Research, Trading, Financial Engineering)
 - `pre-made/software-data-engineering` (Software Engineering, Data Engineering, Backend)
-- `pre-made/analytics-business-intelligence` (BI, Reporting, Analytics Engineering)
-- `pre-made/machine-learning-engineering` (ML, Deep Learning, AI Engineering)
 *(Or `master/resume.md` if cross-domain).*
 
-Create a new application folder (e.g. `applications/<company-role>/` or `<company-role>/`, lowercase hyphenated, e.g. `applications/stripe-swe/`).
+Do NOT search or inspect `applications/` for prior examples or context.
+Create a new application folder (e.g. `applications/<company-role>/`, lowercase hyphenated, e.g. `applications/stripe-swe/`).
 
 ### 2. Formulate the Tailored `resume.md`
 Generate `<target-folder>/resume.md`:
