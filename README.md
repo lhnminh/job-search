@@ -13,16 +13,16 @@ master/
   Morgan_Le_Resume.pdf           Generated comprehensive resume
 pre-made/
   <purpose>/
-    Jake/                         Original Jake-format source and PDF
-    archived_Jake/                Previous compressed Jake source only
-    Loc/                          Legacy moderncv-format source and PDF
+    resume.md                     Curated format-neutral resume content
+    _resume.tex                   Standalone compiled Jake LaTeX source
+    Morgan_Le_Resume.pdf          Built 1-page A4 PDF
 templates/
   Jake/                           Canonical original Jake source template
-  archived_Jake/                  Previous compressed Jake template source
+  Vmock/                          Compact 10pt Jake/Vmock source template
   Loc/                            Canonical moderncv source template
 .agents/skills/tailor-resume/     Repository-local Codex skill, session helper, and validator
 scripts/build_resume.sh           Isolated Tectonic and PDF-compatibility build script
-scripts/convert_loc_to_jake.py    Deterministic premade Loc-to-Jake converter
+scripts/md_to_latex.py            Markdown-to-LaTeX compiler for Jake, Vmock, and Loc
 scripts/normalize_pdf.py          Conservative PDF 1.5 normalization and integrity checks
 scripts/run_resume_app.sh         One-command local web-app launcher
 shared/latex/                     Shared LaTeX classes and fonts
@@ -34,7 +34,15 @@ pyproject.toml and uv.lock        Validator dependencies
 
 Job-specific resume folders and session data are disposable local artifacts ignored by Git. `master/_resume.tex` remains the canonical resume history; `pre-made/` contains reusable general-purpose variants.
 
-Each reusable premade has two independently buildable leaves: `Jake/` uses the original 11pt Jake layout and is the default parser-friendly format, while `Loc/` preserves the legacy moderncv layout. Each active leaf contains only `_resume.tex` and `Morgan_Le_Resume.pdf`. The source-only `archived_Jake/` leaf preserves the previous compressed Jake source without a PDF.
+Each reusable premade contains its `resume.md` content source, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Vmock`, `Loc`).
+
+To render a Markdown resume into one of the supported LaTeX formats, run:
+
+```bash
+uv run python scripts/md_to_latex.py --input pre-made/<purpose>/resume.md --template jake --output /tmp/<purpose>/_resume.tex
+```
+
+Supported template names are `jake`, `loc`, and `vmock`. The converter does not overwrite an active format leaf unless an output path there is explicitly supplied.
 
 ## Cover letters
 

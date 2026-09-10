@@ -78,10 +78,9 @@ For master review, accepting revised wording appends it beside the existing bull
 
 ## Reusable premade formats
 
-- Every reusable variant under `pre-made/<purpose>/` has active `Jake/` and `Loc/` leaves containing the same approved resume content, plus a source-only `archived_Jake/` snapshot when the previous compressed Jake format exists.
-- `Jake/` uses the original 11pt Jake layout and is the default build, validation, and delivery target; `Loc/` is the legacy moderncv rendering.
-- Each active format leaf contains only `_resume.tex` and its own `Morgan_Le_Resume.pdf`; `archived_Jake/` contains only `_resume.tex`.
-- New premades are generated in both active formats. Canonical source-only format references live in `templates/Jake/`, `templates/Loc/`, and `templates/archived_Jake/`.
+- Every reusable variant under `pre-made/<purpose>/` contains its `resume.md` content source, compiled `_resume.tex`, and 1-page A4 `Morgan_Le_Resume.pdf`.
+- Canonical layout templates live in `templates/Jake/`, `templates/Vmock/`, and `templates/Loc/`.
+- Use `scripts/md_to_latex.py` to compile `resume.md` to any template (`jake`, `vmock`, `loc`).
 
 ## Sessions
 

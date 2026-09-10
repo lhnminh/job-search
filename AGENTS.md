@@ -76,13 +76,18 @@ Tailored versions are selective snapshots. They do not replace the reference and
 
 ### Reusable premade formats
 
-Reusable variants under `pre-made/<purpose>/` contain two active format leaves and one source-only archive:
+Reusable variants under `pre-made/<purpose>/` each contain:
 
-- `Jake/` is the default format for building, validation, and delivery and uses the original Jake layout preserved in `templates/Jake/_resume.tex`.
-- `Loc/` preserves the legacy moderncv format.
-- `archived_Jake/` preserves the previous compressed Jake source and contains only `_resume.tex`; it is not a build or delivery target.
+- `resume.md` as the format-neutral content source.
+- `_resume.tex` as the standalone compiled LaTeX source (using the default Jake layout).
+- `Morgan_Le_Resume.pdf` as the built, normalized 1-page A4 PDF.
 
-Each active leaf owns its `_resume.tex` and `Morgan_Le_Resume.pdf`; do not place either file directly in the premade container. New premades must be created in both active formats from the same approved content. Use `scripts/convert_loc_to_jake.py` to derive the standalone Jake source from the approved Loc source. Canonical source-only format references live under `templates/Jake/`, `templates/Loc/`, and `templates/archived_Jake/`.
+Formatting templates live under `templates/`:
+- `templates/Jake/` for the standard 11pt Jake template.
+- `templates/Vmock/` for the compact 10pt Jake/Vmock template.
+- `templates/Loc/` for the moderncv template.
+
+Use `scripts/md_to_latex.py` to compile `resume.md` to any template (`jake`, `vmock`, `loc`).
 
 ### Tailoring rules
 
@@ -115,11 +120,10 @@ Use the existing build script:
 ```
 
 - No argument builds the master source of truth.
-- A folder argument builds that internal version.
-- A premade container argument such as `pre-made/finance-consulting` resolves to its `Jake/` leaf by default; pass the explicit `Loc/` path to build the legacy format.
+- A folder argument builds that internal version (e.g. `./scripts/build_resume.sh pre-made/finance-consulting`).
 - The source-of-truth build writes `master/Morgan_Le_Resume.pdf`.
 - A tailored build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
-- Every active tailored resume leaf must contain only `_resume.tex` and its independent `Morgan_Le_Resume.pdf`; an `archived_Jake/` leaf contains only `_resume.tex`.
+- Every active tailored or premade resume folder contains `_resume.tex` and its independent `Morgan_Le_Resume.pdf`.
 - Shared LaTeX classes, styles, and fonts belong only in `shared/latex/`.
 - Do not duplicate shared support files inside resume folders.
 - The build script must compile in a temporary directory containing the selected `_resume.tex` and copied `shared/latex/` files.

@@ -9,7 +9,7 @@ Work directly in the current Codex conversation. Follow `AGENTS.md`; do not crea
 
 ## Route reusable premade work
 
-When the user asks to create or update a reusable variant under `pre-made/`, maintain active `pre-made/<purpose>/Jake/` and `pre-made/<purpose>/Loc/` leaves. Treat Jake as the default build, validation, and delivery format, while preserving Loc as the legacy moderncv rendering of the same approved content. Generate the standalone original-layout Jake source from Loc with `scripts/convert_loc_to_jake.py`; do not independently rewrite facts while converting formats. Preserve an existing previous compressed Jake source under `pre-made/<purpose>/archived_Jake/_resume.tex` without a PDF. Canonical source-only format references live in `templates/Jake/`, `templates/Loc/`, and `templates/archived_Jake/`.
+When the user asks to create or update a reusable variant under `pre-made/`, maintain its `resume.md` content source, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Use `scripts/md_to_latex.py` to compile `resume.md` into the desired template layout (`jake`, `vmock`, `loc`). Canonical format references live under `templates/Jake/`, `templates/Vmock/`, and `templates/Loc/`.
 
 ## Route Resume Workspace sessions
 
