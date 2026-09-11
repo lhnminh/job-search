@@ -8,6 +8,8 @@ description: Tailor, review, and build application-specific resumes in this repo
 Work directly in the current Codex or Antigravity conversation. Follow `AGENTS.md`; do not create another chat or call another model.
 
 > **CRITICAL RULE**: Do NOT inspect, read, list, grep, or search the `applications/` directory. Resumes in `applications/` are ephemeral and periodically deleted by the user; browsing them is a waste of time. All tailoring references come exclusively from `pre-made/` (for track baselines) and `master/resume.md` (for verified facts, projects, and skills). `applications/` is strictly a write destination.
+>
+> **DISCONTINUED TEMPLATE RULE**: Never use or propose the Vmock template (`--template vmock` / `templates/Vmock/`). It is discontinued. Resumes must always be compiled using the standard Jake template (`--template jake`). If content overflows, shorten bullet points and trim wording.
 
 ## Primary Mode: Fast 1-Turn Batch Proposal & Diff Review
 
@@ -31,18 +33,20 @@ Generate `<target-folder>/resume.md`:
 - **Projects Portfolio**: Include 1–2 high-relevance projects from `master/resume.md` that provide direct proof of skills asked for in the JD.
 - **Technical Skills**: Align keywords and tools with the JD. Strictly use verified skills from `master/resume.md`—never invent technologies or proficiencies.
 - **No Hallucinations**: Employer names, dates, official job titles, and verified metrics must not be altered.
-- **1-Page A4 Budget**: Design line counts to comfortably fit a 1-page A4 PDF (typically ~35–45 total lines of content depending on template).
+- **1-Page A4 Budget**: Design line counts to comfortably fit a 1-page A4 PDF under the standard Jake 11pt template (typically ~35–45 total lines of content). Never rely on Vmock to shrink text.
 
-### 3. Present the Unified Diff & Rationale
+### 3. Present the Full Unified Diff & Rationale
+> **CRITICAL REQUIREMENT**: **Always show the complete, full diff**. Never truncate, summarize, or omit sections. The in-chat diff must represent the entire customized document across all sections (Education, Experience, Projects, Skills) so the user can verify all inclusions, exclusions, and modifications at a glance before building.
+
 In the same first response, show:
-1. An in-chat Markdown diff block (`diff`) comparing the tailored `resume.md` against the base premade:
+1. A complete in-chat Markdown diff block (`diff`) comparing the tailored `resume.md` against the base premade:
    - `+` Added bullets or projects
    - `-` Removed bullets or projects
    - `~` Adjusted skills or keywords
 2. A brief 3-point rationale:
    - Why specific projects and bullet points were emphasized.
    - Which target keywords were matched.
-   - Target page budget (e.g. Jake standard or Vmock compact).
+   - Target page budget (Jake standard 11pt; Vmock is discontinued).
 3. Notify the user they can inspect the file directly, open side-by-side comparison in their IDE, or run:
    ```bash
    uv run python scripts/diff_resume.py <base-path> <target-path>
@@ -54,7 +58,7 @@ In the same first response, show:
     ```bash
     uv run python scripts/md_to_latex.py <target-folder>/resume.md --template jake --build
     ```
-  - If the content overflows 1 page in Jake (11pt), try `--template vmock` (compact 10pt) or propose specific line condensations.
+  - If the content overflows 1 page in Jake (11pt), propose specific line condensations to fit within 1 page. **Never use `--template vmock` (it is discontinued).**
   - Run the validator:
     ```bash
     uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "<target-folder>"
@@ -62,7 +66,7 @@ In the same first response, show:
   - Verify the rendered PDF is exactly one A4 page, with active hyperlinks and clean typography.
 - If the user requests tweaks (e.g. *"Swap bullet 2 for bullet 3 in Shopee"*, *"Add Docker to skills"*):
   - Apply the requested edits directly to `<target-folder>/resume.md`.
-  - Show the updated diff.
+  - **Always show the complete updated full diff** against the base (not just a snippet of the modified line).
   - Compile and verify once approved.
 
 ---

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a Markdown resume into compile-ready LaTeX for Jake, Vmock, or Loc templates."""
+"""Convert a Markdown resume into compile-ready LaTeX for Jake, Loc, or legacy Vmock (discontinued) templates."""
 
 from __future__ import annotations
 
@@ -94,6 +94,11 @@ def md_inline_to_latex(text: str) -> str:
         processed = processed.replace(f"\x00LNK{index}\x00", f"\\href{{{url}}}{{{label_tex}}}")
 
     return processed
+
+
+def header_link(url: str, label: str) -> str:
+    """Render contact links with a fixed underline depth, independent of descenders."""
+    return f"\\href{{{url}}}{{\\underline{{\\smash{{{label}}}}}}}"
 
 
 def parse_md_resume(md_content: str) -> MdResume:
@@ -212,7 +217,7 @@ def render_jake(resume: MdResume) -> str:
 
 \newcommand{\resumeItem}[1]{
   \item\small{
-    {#1 \vspace{-2pt}}
+    {#1\par\vspace{-2pt}}
   }
 }
 
@@ -250,16 +255,16 @@ def render_jake(resume: MdResume) -> str:
     if resume.phone:
         contacts.append(f"\\small {resume.phone}")
     if resume.email:
-        contacts.append(f"\\href{{mailto:{resume.email}}}{{\\underline{{{resume.email}}}}}")
+        contacts.append(header_link(f"mailto:{resume.email}", resume.email))
     if resume.linkedin[0]:
         url = resume.linkedin[1] or f"https://{resume.linkedin[0]}"
-        contacts.append(f"\\href{{{url}}}{{\\underline{{{resume.linkedin[0]}}}}}")
+        contacts.append(header_link(url, resume.linkedin[0]))
     if resume.github[0]:
         url = resume.github[1] or f"https://{resume.github[0]}"
-        contacts.append(f"\\href{{{url}}}{{\\underline{{{resume.github[0]}}}}}")
+        contacts.append(header_link(url, resume.github[0]))
     if resume.website[0]:
         url = resume.website[1] or f"https://{resume.website[0]}"
-        contacts.append(f"\\href{{{url}}}{{\\underline{{{resume.website[0]}}}}}")
+        contacts.append(header_link(url, resume.website[0]))
 
     contact_str = " $|$\n    ".join(contacts)
 
@@ -315,7 +320,7 @@ def render_jake(resume: MdResume) -> str:
 
 
 def render_vmock(resume: MdResume) -> str:
-    """Render resume using the compact 10pt Vmock template."""
+    """Render resume using the compact 10pt Vmock template (discontinued)."""
     preamble = r"""\documentclass[a4paper,10pt]{article}
 
 % Force traditional Type 1 fonts for compatibility with legacy resume parsers.
@@ -353,7 +358,7 @@ def render_vmock(resume: MdResume) -> str:
 }{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
 
 \newcommand{\resumeItem}[1]{
-  \item\small{{#1 \vspace{-2pt}}}
+  \item\small{{#1\par\vspace{-2pt}}}
 }
 
 \newcommand{\resumeSubheading}[4]{
@@ -381,16 +386,16 @@ def render_vmock(resume: MdResume) -> str:
     if resume.phone:
         contacts.append(f"\\small {resume.phone}")
     if resume.email:
-        contacts.append(f"\\href{{mailto:{resume.email}}}{{\\underline{{{resume.email}}}}}")
+        contacts.append(header_link(f"mailto:{resume.email}", resume.email))
     if resume.linkedin[0]:
         url = resume.linkedin[1] or f"https://{resume.linkedin[0]}"
-        contacts.append(f"\\href{{{url}}}{{\\underline{{{resume.linkedin[0]}}}}}")
+        contacts.append(header_link(url, resume.linkedin[0]))
     if resume.github[0]:
         url = resume.github[1] or f"https://{resume.github[0]}"
-        contacts.append(f"\\href{{{url}}}{{\\underline{{{resume.github[0]}}}}}")
+        contacts.append(header_link(url, resume.github[0]))
     if resume.website[0]:
         url = resume.website[1] or f"https://{resume.website[0]}"
-        contacts.append(f"\\href{{{url}}}{{\\underline{{{resume.website[0]}}}}}")
+        contacts.append(header_link(url, resume.website[0]))
 
     contact_str = " $|$\n  ".join(contacts)
 
@@ -534,7 +539,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input_pos", nargs="?", type=Path, help="Path to markdown resume (positional)")
     parser.add_argument("-i", "--input", type=Path, help="Path to markdown resume (flag)")
-    parser.add_argument("-t", "--template", choices=["jake", "vmock", "loc"], default="jake", help="Target template")
+    parser.add_argument("-t", "--template", choices=["jake", "vmock", "loc"], default="jake", help="Target template ('vmock' is discontinued; agents must use 'jake')")
     parser.add_argument("-o", "--output", type=Path, help="Output .tex path")
     parser.add_argument("-b", "--build", action="store_true", help="Build PDF using build_resume.sh")
     args = parser.parse_args()
@@ -543,6 +548,9 @@ def main() -> int:
     if not input_file.is_file():
         print(f"Error: Input file {input_file} does not exist.", file=sys.stderr)
         return 1
+
+    if args.template.lower() == "vmock":
+        print("Warning: The 'vmock' template is discontinued. Agents must use 'jake' instead.", file=sys.stderr)
 
     content = input_file.read_text(encoding="utf-8")
     resume = parse_md_resume(content)

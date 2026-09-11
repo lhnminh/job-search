@@ -20,15 +20,15 @@
 
 ### [Shopee](https://www.sea.com/products/shopee) | Product Operations and Analytics Associate
 *Jun 2025 – Jun 2026*
-- Analyzed seller performance, campaign effectiveness, and regional sales trends to guide promotional strategies, contributing to over $100K in revenue and 25% YoY growth.
 - Engineered automated data pipelines integrating sales and P&L data across multiple sources, reducing manual processing time by 20%.
+- Analyzed seller performance, campaign effectiveness, and regional sales trends to guide promotional strategies, contributing to over $100K in revenue and 25% YoY growth.
 - Coordinated service delivery across 10+ internal personnel and BPO partners, managing workflow execution and performance to maintain operational efficiency and service quality.
 - **Technologies:** Python, SQL, Looker, Google Apps Script.
 
 ### [Boston Consulting Group (BCG)](https://www.bcg.com/about/overview) | Consultant
 *Jan 2025 – Jun 2025*
 - Partnered with cross-functional client teams to translate business challenges into data-driven analyses, supporting go-to-market strategy for a $10B infrastructure initiative.
-- Built pricing, market-sizing, and financial models to evaluate commercial opportunities and inform executive decisions.
+- Built pricing and market-sizing models to evaluate opportunities and inform executive decisions.
 - **Technologies:** pandas, SQL, Excel.
 
 ### [Peloton](https://www.onepeloton.com/company) | Business Operations Analyst II
@@ -40,7 +40,6 @@
 ### [Samsung Electronics America](https://www.samsung.com/us/about-us/our-business/) | Supply Chain Data Ops Analyst
 *May 2023 – Dec 2023*
 - Automated purchase-order tracking and reporting workflows for procurement operations supporting over $1M in daily purchasing volume across 100+ global material supply chains.
-- Optimized Excel-based tools and automated data-processing workflows, increasing analyst productivity by 10%.
 - **Technologies:** Python, SQL, SAP.
 
 ## Projects
@@ -50,3 +49,8 @@
 - Built an AI-powered platform combining air-quality, weather, traffic, and satellite fire data to investigate Hanoi pollution events and rank likely sources with traceable evidence.
 - Developed a FastAPI/PostgreSQL backend and Next.js geospatial dashboard with DataHub context, human review, and auditable investigation histories.
 - **Technologies:** Python, FastAPI, PostgreSQL, DataHub, Gemini, Next.js, TypeScript, MapLibre.
+
+### [Axiom](https://github.com/lhnminh/axiom) | AI-Powered Reading Tool
+*Jul 2026*
+- Collaborated with a teammate to design, build, and present a macOS application using LLM APIs to highlight key concepts and explain PDFs during OpenAI Build Week.
+- **Technologies:** Swift, PDFKit, LLM APIs (Gemini, OpenAI).

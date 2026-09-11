@@ -6,6 +6,7 @@
 
 ### Columbia University | Master's in Data Science
 *Aug 2026 – Dec 2027*
+- **Relevant Coursework:** Advanced Algorithms, Statistical Inference & Modelling, Computer Systems
 
 ### University of Rochester | Bachelor in Information Systems & Economics; Minor in Computer Science
 *Aug 2019 – May 2023*
@@ -14,9 +15,8 @@
 
 ### [Vietnam National University](https://en.vnu.edu.vn/) | Research Assistant
 *Jun 2026 – Aug 2026*
-- Implemented and fine-tuned PyTorch deep learning models on Vietnam-scale datasets, benchmarking performance against established baselines.
-- Integrated a Geographical Random Forest model into an existing research pipeline and built Python preprocessing workflows for geospatial feature engineering, training, and evaluation.
-- **Technologies:** Python, PyTorch, MLflow.
+- Integrated a Geographical Random Forest model into an existing research pipeline and built Python workflows for geospatial feature engineering, training, and evaluation; benchmarked and fine-tuned PyTorch models on Vietnam-scale datasets.
+- **Technologies:** Python, PyTorch, MLflow, GeoPandas, QGIS.
 
 ### [Shopee](https://www.sea.com/products/shopee) | Product Operations and Analytics Associate
 *Jun 2025 – Jun 2026*
@@ -35,18 +35,22 @@
 *Dec 2023 – Jun 2024*
 - Led end-to-end procurement initiatives across IT, Professional Services, and CapEx, negotiating supplier terms and applying spend analytics to achieve $800K in annual savings and identify $2M in revenue opportunities.
 - Designed and implemented Looker BI dashboards that helped business unit leaders identify $10M in savings.
-- **Technologies:** Python, BigQuery, Looker, Coupa, pandas.
+- **Technologies:** Python, BigQuery, Looker, pandas.
 
 ### [Samsung Electronics America](https://www.samsung.com/us/about-us/our-business/) | Supply Chain Data Ops Analyst
 *May 2023 – Dec 2023*
 - Automated purchase-order tracking and reporting workflows for procurement operations supporting over $1M in daily purchasing volume across 100+ global material supply chains.
-- Optimized Excel-based tools and automated data-processing workflows, increasing analyst productivity by 10%.
 - **Technologies:** Python, SQL, SAP.
 
 ## Projects
 
 ### [ZephyrAQ](https://github.com/lhnminh/zephyr-aq) | AI-Powered Air Quality Platform
 *Aug 2026*
-- Built an AI-powered platform combining air-quality, weather, traffic, and satellite fire data to investigate Hanoi pollution events and rank likely sources with traceable evidence.
+- Built an AI platform integrating air-quality, weather, traffic, and satellite fire data to investigate Hanoi pollution events and rank likely sources with traceable evidence.
 - Developed a FastAPI/PostgreSQL backend and Next.js geospatial dashboard with DataHub context, human review, and auditable investigation histories.
 - **Technologies:** Python, FastAPI, PostgreSQL, DataHub, Gemini, Next.js, TypeScript, MapLibre.
+
+### [Axiom](https://github.com/lhnminh/axiom) | AI-Powered Reading Tool
+*Jul 2026*
+- Collaborated with a teammate to design, develop, and present a macOS application that proactively highlights key concepts and provides contextual explanations while users read PDFs during OpenAI Build Week.
+- **Technologies:** Swift, PDFKit, LLM APIs (Gemini, OpenAI).

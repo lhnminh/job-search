@@ -1,15 +1,13 @@
 # Morgan Le
 
-morgan.hn.le@gmail.com | 347-774-6979  
-205 W 103rd, Apt. 4E  
-New York, NY 10025
+[ml5536@columbia.edu](mailto:ml5536@columbia.edu) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
 
-Date: ____________________
+[Date]
 
 [Company Name]  
 [Company Address]
 
-Dear Hiring Manager,
+Dear [Company Name] Hiring Team,
 
 I am excited to apply for the [Position Title] role at [Company Name]. I am currently pursuing a master's degree in Data Science at Columbia University, where I also serve as a Graduate Teaching Assistant. Combined with my background in product operations, analytics, and strategy consulting, these experiences have shaped how I approach data science: anchoring on customer behavior and core product metrics, building reliable analytical workflows, and translating empirical findings into clear product decisions.
 

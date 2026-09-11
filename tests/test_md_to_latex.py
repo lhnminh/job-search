@@ -13,7 +13,7 @@ from md_to_latex import parse_md_resume, render_jake, render_vmock, render_loc  
 
 SAMPLE_MD = """# Morgan Le
 
-[morgan.hn.le@gmail.com](mailto:morgan.hn.le@gmail.com) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
+[ml5536@columbia.edu](mailto:ml5536@columbia.edu) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
 
 ## Education
 
@@ -58,7 +58,7 @@ class MdToLatexTests(unittest.TestCase):
         resume = parse_md_resume(SAMPLE_MD)
         self.assertEqual("Morgan Le", resume.name)
         self.assertEqual("347-774-6979", resume.phone)
-        self.assertEqual("morgan.hn.le@gmail.com", resume.email)
+        self.assertEqual("ml5536@columbia.edu", resume.email)
         self.assertEqual(3, len(resume.sections))
         self.assertEqual("Education", resume.sections[0].name)
         self.assertEqual("Relevant Experience", resume.sections[1].name)
@@ -74,7 +74,13 @@ class MdToLatexTests(unittest.TestCase):
         resume = parse_md_resume(SAMPLE_MD)
         jake_tex = render_jake(resume)
         self.assertIn(r"\documentclass[a4paper,11pt]{article}", jake_tex)
+        self.assertIn(r"\href{mailto:ml5536@columbia.edu}{\underline{\smash{ml5536@columbia.edu}}}", jake_tex)
+        self.assertIn(r"\href{https://www.linkedin.com/in/morganhle/}{\underline{\smash{linkedin.com/in/morganhle}}}", jake_tex)
+        self.assertIn(r"\href{https://lhnminh.github.io/}{\underline{\smash{lhnminh.github.io}}}", jake_tex)
         self.assertIn(r"\href{https://www.sea.com/products/shopee}{Shopee}", jake_tex)
+        self.assertNotIn(r"\href{https://www.sea.com/products/shopee}{\underline{Shopee}}", jake_tex)
+        self.assertIn(r"{#1\par\vspace{-2pt}}", jake_tex)
+        self.assertNotIn(r"#1 \vspace{-2pt}", jake_tex)
         self.assertIn(r"\$100K", jake_tex)
         self.assertIn(r"25\%", jake_tex)
         self.assertIn(r"Top 8\%", jake_tex)
@@ -85,7 +91,13 @@ class MdToLatexTests(unittest.TestCase):
         resume = parse_md_resume(SAMPLE_MD)
         vmock_tex = render_vmock(resume)
         self.assertIn(r"\documentclass[a4paper,10pt]{article}", vmock_tex)
+        self.assertIn(r"\href{mailto:ml5536@columbia.edu}{\underline{\smash{ml5536@columbia.edu}}}", vmock_tex)
+        self.assertIn(r"\href{https://www.linkedin.com/in/morganhle/}{\underline{\smash{linkedin.com/in/morganhle}}}", vmock_tex)
+        self.assertIn(r"\href{https://lhnminh.github.io/}{\underline{\smash{lhnminh.github.io}}}", vmock_tex)
         self.assertIn(r"\href{https://www.sea.com/products/shopee}{Shopee}", vmock_tex)
+        self.assertNotIn(r"\href{https://www.sea.com/products/shopee}{\underline{Shopee}}", vmock_tex)
+        self.assertIn(r"{#1\par\vspace{-2pt}}", vmock_tex)
+        self.assertNotIn(r"#1 \vspace{-2pt}", vmock_tex)
         self.assertIn(r"\$100K", vmock_tex)
         self.assertIn(r"Top 8\%", vmock_tex)
 

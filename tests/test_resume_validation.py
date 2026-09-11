@@ -64,7 +64,7 @@ class ResumeValidationTests(unittest.TestCase):
 \begin{center}
   \textbf{\Huge \scshape Morgan Le} \\ \vspace{1pt}
   \small 347-774-6979 $|$
-  \href{mailto:morgan.hn.le@gmail.com}{\underline{morgan.hn.le@gmail.com}} $|$
+  \href{mailto:ml5536@columbia.edu}{\underline{ml5536@columbia.edu}} $|$
   \href{https://www.linkedin.com/in/morganhle/}{\underline{linkedin.com/in/morganhle}} $|$
   \href{https://github.com/lhnminh}{\underline{github.com/lhnminh}}
 \end{center}
@@ -75,7 +75,7 @@ class ResumeValidationTests(unittest.TestCase):
                 "firstname": ("Morgan",),
                 "familyname": ("Le",),
                 "mobile": ("347-774-6979",),
-                "email": ("morgan.hn.le@gmail.com",),
+                "email": ("ml5536@columbia.edu",),
                 "linkedin": (
                     "https://www.linkedin.com/in/morganhle/",
                     "linkedin.com/in/morganhle",

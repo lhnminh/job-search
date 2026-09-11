@@ -79,8 +79,8 @@ For master review, accepting revised wording appends it beside the existing bull
 ## Reusable premade formats
 
 - Every reusable variant under `pre-made/<purpose>/` contains its `resume.md` content source, compiled `_resume.tex`, and 1-page A4 `Morgan_Le_Resume.pdf`.
-- Canonical layout templates live in `templates/Jake/`, `templates/Vmock/`, and `templates/Loc/`.
-- Use `scripts/md_to_latex.py` to compile `resume.md` to any template (`jake`, `vmock`, `loc`).
+- Canonical layout templates live in `templates/Jake/` and `templates/Loc/` (`templates/Vmock/` is discontinued and must not be used by agents).
+- Use `scripts/md_to_latex.py` to compile `resume.md` to supported templates (`jake`, `loc`).
 
 ## Sessions
 

@@ -22,12 +22,17 @@ pre-made/
     Morgan_Le_Resume.pdf        Built 1-page A4 PDF
 templates/
   Jake/                         Canonical original Jake source template (11pt)
-  Vmock/                        Compact 10pt Jake/Vmock source template
   Loc/                          Canonical moderncv source template
+  Vmock/                        Legacy compact 10pt template (discontinued)
+  cover-letter/                 Canonical letter template matching Jake style
 .agents/skills/tailor-resume/   Repository-local skill, session helper, and validator
+.agents/skills/tailor-cover-letter/ Repository-local skill for tailoring cover letters
 scripts/build_resume.sh         Isolated Tectonic and PDF-compatibility build script
-scripts/md_to_latex.py          Markdown-to-LaTeX compiler for Jake, Vmock, and Loc
+scripts/build_cover_letter.sh   Isolated Tectonic build script for cover letters
+scripts/md_to_latex.py          Markdown-to-LaTeX compiler for Jake, Loc, and legacy Vmock
+scripts/md_to_cover_letter.py   Markdown-to-LaTeX compiler for cover letters
 scripts/diff_resume.py          Structured CLI diff viewer for comparing resumes
+scripts/diff_cover_letter.py    CLI diff viewer for comparing cover letters
 scripts/normalize_pdf.py        Conservative PDF 1.5 normalization and integrity checks
 scripts/run_resume_app.sh       One-command local web-app launcher
 shared/latex/                   Shared LaTeX classes and fonts
@@ -44,7 +49,7 @@ pyproject.toml and uv.lock      Validator dependencies
 - `quantitative-research-finance`
 - `software-data-engineering`
 
-Each reusable premade contains its `resume.md` content source, domain `cover_letter.md`, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Vmock`, `Loc`).
+Each reusable premade contains its `resume.md` content source, domain `cover_letter.md`, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Loc`; `Vmock` is discontinued).
 
 To render and build a Markdown resume into one of the supported LaTeX formats:
 
@@ -52,7 +57,7 @@ To render and build a Markdown resume into one of the supported LaTeX formats:
 uv run python scripts/md_to_latex.py applications/<company-role>/resume.md --template jake --build
 ```
 
-Supported template names are `jake` (11pt default), `vmock` (compact 10pt), and `loc`.
+Supported template names are `jake` (11pt default) and `loc` (`vmock` is discontinued).
 
 To compare two resume versions and see a colorized diff:
 
@@ -92,7 +97,7 @@ uv sync
    ./scripts/build_resume.sh pre-made/software-engineer
    ```
 
-To compile a Markdown resume directly to PDF using any template (`jake`, `vmock`, `loc`):
+To compile a Markdown resume directly to PDF using supported templates (`jake`, `loc`):
 
 ```bash
 python scripts/md_to_latex.py master/resume.md --template jake --build
@@ -132,6 +137,30 @@ Master updates are append-only in the interactive workflow. To add an accepted f
 The bundled session helper stores parsed entries and the master-resume hash. On a continued review, it verifies that hash and returns only the active entry. If the master is unchanged, Codex does not need to reread the complete source or repository instructions. If it changed, the helper marks the session stale so Codex can reread and reconcile safely.
 
 When one reply decides several bullets or projects, the helper persists them together with one atomic ledger replacement. Undo reverses that complete user-message batch.
+
+## Tailor a cover letter
+
+Use `$tailor-cover-letter` to draft, diff, and compile a targeted cover letter:
+
+```text
+Use $tailor-cover-letter to draft a cover letter for this job description:
+
+<paste job description>
+```
+
+The workflow:
+1. Selects the baseline track from `pre-made/<track>/cover_letter.md`.
+2. Drafts `applications/<company-role>/cover_letter.md` using the structured 4-paragraph framework (Hook & Positioning, Core Proof & Accomplishments from `master/resume.md`, Builder Progression, Company Fit).
+3. Presents a unified diff and narrative rationale.
+4. Once approved, compiles to LaTeX and builds a normalized 1-page A4 PDF:
+   ```bash
+   uv run python scripts/md_to_cover_letter.py applications/<company-role>/cover_letter.md --build
+   ```
+5. Ensures zero unfilled placeholders and exact 1-page compliance.
+   To inspect differences at any time:
+   ```bash
+   uv run python scripts/diff_cover_letter.py pre-made/<track> applications/<company-role>
+   ```
 
 ## Use the local Resume Workspace
 

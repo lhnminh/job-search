@@ -1,6 +1,6 @@
 # Morgan Le
 
-[morgan.hn.le@gmail.com](mailto:morgan.hn.le@gmail.com) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
+[ml5536@columbia.edu](mailto:ml5536@columbia.edu) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
 
 ## Education
 
