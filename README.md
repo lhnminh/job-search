@@ -1,123 +1,84 @@
-# Resume tailoring with Codex
+# Agentic Resume Customization
 
-This repository publishes one approved resume and provides tooling for creating private, job-specific, one-page A4 resumes through either a conversational Codex workflow or the included local Resume Workspace web app.
+A local-first system for turning one comprehensive resume into focused, job-specific applications with Codex.
 
-The approved public artifact is available as [`public/resume.md`](public/resume.md) and [`public/Morgan_Le_Resume.pdf`](public/Morgan_Le_Resume.pdf). The comprehensive `master/resume.md`, reusable `pre-made/` variants, tailored `applications/`, and personalized cover letters remain local and are ignored by Git.
+Bring your own resume, add any reusable content or layout templates you prefer, and give the agent a job description. The workflow selects relevant experience, proposes targeted wording, shows the complete diff for review, and builds a verified one-page A4 PDF without inventing facts.
 
-During tailoring, Codex reviews every education item and work role, then asks you to choose which projects belong before reviewing the selected projects' bullets. It does not invent facts or silently remove content to make a resume fit.
+[View the example resume](public/resume.md) · [Download the example PDF](public/Morgan_Le_Resume.pdf)
 
-### Repository structure
+## What it does
 
-```text
-public/                         Only resume artifacts published by Git
-  resume.md                     Approved public FDE resume source
-  Morgan_Le_Resume.pdf          Approved public 1-page A4 resume
-applications/                   Private tailored applications (Git-ignored)
-  <company-role>/
-    resume.md                   Tailored Markdown resume
-    cover_letter.md             Optional tailored cover letter
-    Morgan_Le_Resume.pdf        Compiled 1-page A4 PDF
-master/                         Private canonical source (Git-ignored)
-  resume.md                     Canonical Markdown resume (source of truth)
-pre-made/                       Private reusable variants (Git-ignored)
-  <purpose>/
-    resume.md                   Curated format-neutral resume content
-    cover_letter.md             Base cover letter template for this domain track
-    _resume.tex                 Standalone compiled Jake LaTeX source
-    Morgan_Le_Resume.pdf        Built 1-page A4 PDF
-templates/
-  Jake/                         Canonical original Jake source template (11pt)
-  Loc/                          Canonical moderncv source template
-  Vmock/                        Legacy compact 10pt template (discontinued)
-  cover-letter/                 Fictional public template matching Jake style
-.agents/skills/tailor-resume/   Repository-local skill, session helper, and validator
-.agents/skills/tailor-cover-letter/ Repository-local skill for tailoring cover letters
-scripts/build_resume.sh         Isolated Tectonic and PDF-compatibility build script
-scripts/build_cover_letter.sh   Isolated Tectonic build script for cover letters
-scripts/md_to_latex.py          Markdown-to-LaTeX compiler for Jake, Loc, and legacy Vmock
-scripts/md_to_cover_letter.py   Markdown-to-LaTeX compiler for cover letters
-scripts/diff_resume.py          Structured CLI diff viewer for comparing resumes
-scripts/diff_cover_letter.py    CLI diff viewer for comparing cover letters
-scripts/normalize_pdf.py        Conservative PDF 1.5 normalization and integrity checks
-scripts/run_resume_app.sh       One-command local web-app launcher
-shared/latex/                   Shared LaTeX classes and fonts
-webapp/                         Local resume workspace service and interface
-AGENTS.md                       Repository rules for Codex and Antigravity
-SPEC.md                         Detailed workflow contract
-pyproject.toml and uv.lock      Validator dependencies
-```
+- Uses your private master resume as the source of truth.
+- Reuses optional track-specific baselines for engineering, data science, finance, consulting, or other roles.
+- Reviews every proposed change with you in the active Codex conversation.
+- Preserves verified employers, titles, dates, metrics, and responsibilities.
+- Builds ATS-readable PDFs with working hyperlinks.
+- Keeps private resumes, applications, and cover letters out of Git.
 
-The local, Git-ignored `master/` remains the canonical resume history; local `pre-made/` contains reusable general-purpose variants across 5 tracks:
-- `finance-consulting`
-- `forward-deployed-engineer`
-- `product-decision-data-science`
-- `quantitative-research-finance`
-- `software-data-engineering`
+## Quick start
 
-Each reusable premade remains on the local machine with its `resume.md` content source, domain `cover_letter.md`, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Loc`; `Vmock` is discontinued).
-
-To render and build a Markdown resume into one of the supported LaTeX formats:
+### 1. Clone and install
 
 ```bash
-uv run python scripts/md_to_latex.py applications/<company-role>/resume.md --template jake --build
-```
+git clone <repository-url>
+cd job-search
 
-Supported template names are `jake` (11pt default) and `loc` (`vmock` is discontinued).
-
-To compare two resume versions and see a colorized diff:
-
-```bash
-uv run python scripts/diff_resume.py pre-made/<track> applications/<company-role>
-```
-
-## Requirements
-
-- [Codex](https://openai.com/codex/) with repository-local skill support
-- [Tectonic](https://tectonic-typesetting.github.io/) on `PATH`
-- [uv](https://docs.astral.sh/uv/) with Python 3.12 or later
-- Optional: [Poppler](https://poppler.freedesktop.org/) for rendering PDFs during visual review
-
-No Node.js installation or frontend build step is required. The web app uses the Python standard-library HTTP server and static HTML, CSS, and JavaScript.
-
-On macOS, install the command-line dependencies with Homebrew:
-
-```bash
+# macOS
 brew install uv tectonic poppler
-```
-
-From the repository root, create or update the Python environment:
-
-```bash
 uv sync
 ```
 
-## Set up your resume
+Requirements:
 
-1. Fork or clone this repository.
-2. Create the private workspace and copy the public resume as a starting point:
+- [Codex](https://openai.com/codex/) with repository-local skill support
+- Python 3.12 and [uv](https://docs.astral.sh/uv/)
+- [Tectonic](https://tectonic-typesetting.github.io/) for PDF builds
+- [Poppler](https://poppler.freedesktop.org/) for visual PDF checks
 
-   ```bash
-   mkdir -p master pre-made applications
-   cp public/resume.md master/resume.md
-   ```
+### 2. Add your resume
 
-3. Update personal details and verified history in the private `master/resume.md`.
-4. Review `AGENTS.md` and adjust content policies if needed.
-5. Build any local pre-made track or application resume:
-
-   ```bash
-   ./scripts/build_resume.sh pre-made/software-engineer
-   ```
-
-To compile a Markdown resume directly to PDF using supported templates (`jake`, `loc`):
+Create the private workspace and add your comprehensive resume:
 
 ```bash
-python scripts/md_to_latex.py master/resume.md --template jake --build
+mkdir -p master pre-made applications
+cp public/resume.md master/resume.md
 ```
 
-## Tailor for a job
+Replace the example content in `master/resume.md` with your own verified experience. This file is your private source of truth and is ignored by Git.
 
-Open the repository in Codex and start a task with:
+The expected Markdown structure is simple:
+
+```markdown
+# Your Name
+
+[email@example.com](mailto:email@example.com) | 212-555-0100 | [Portfolio](https://example.com)
+
+## Experience
+
+### Company | Role | Location
+*Jan 2024 – Present*
+- Accomplished a specific outcome using a specific skill.
+- **Technologies:** Python, SQL
+```
+
+### 3. Add your own templates (optional)
+
+The included Jake layout works out of the box. You can also add private, reusable content baselines:
+
+```text
+pre-made/
+  software-engineering/
+    resume.md
+    cover_letter.md       # optional
+  data-science/
+    resume.md
+```
+
+Formatting templates live in `templates/`. Add or adapt a layout there if you want a different visual style.
+
+### 4. Tailor for a job
+
+Open the repository in Codex and ask:
 
 ```text
 Use $tailor-resume to tailor my resume for this job description:
@@ -125,190 +86,102 @@ Use $tailor-resume to tailor my resume for this job description:
 <paste the complete job description>
 ```
 
-Codex will:
+The agent will:
 
-1. Read the source resume (`pre-made/<track>` or `master/resume.md`) and job description without inspecting the ephemeral `applications/` folder.
-2. Propose a lowercase, hyphenated folder name.
-3. Review every education item and work role, keeping all verified work positions represented.
-4. Show all projects together and ask you to include or exclude each one.
-5. Ask you to keep, rewrite, or remove every bullet in the required entries and included projects.
-6. Save each message's decisions atomically under `.resume/sessions/` so an interrupted review can resume.
-7. Build and validate the approved resume without changing the master source.
-8. Verify that the result is exactly one A4 page and visually inspect it.
+1. Read the job description and your private resume.
+2. Select the closest optional baseline, when available.
+3. Propose targeted bullets and project choices using verified facts only.
+4. Show the complete Markdown diff for approval.
+5. Save the approved version under `applications/<company-role>/`.
+6. Build and validate an ATS-readable, one-page A4 PDF.
 
-You can reply naturally, for example:
+For a cover letter, use the same flow with `$tailor-cover-letter`.
 
-```text
-Keep 1 and 3. Rewrite 2 to emphasize the forecasting work, but do not add new metrics.
-```
+## Output
 
-Master updates are append-only in the interactive workflow. To add an accepted fact or bullet to the source of truth, explicitly ask Codex to do so.
-
-### Fast session resume
-
-The bundled session helper stores parsed entries and the master-resume hash. On a continued review, it verifies that hash and returns only the active entry. If the master is unchanged, Codex does not need to reread the complete source or repository instructions. If it changed, the helper marks the session stale so Codex can reread and reconcile safely.
-
-When one reply decides several bullets or projects, the helper persists them together with one atomic ledger replacement. Undo reverses that complete user-message batch.
-
-## Tailor a cover letter
-
-Use `$tailor-cover-letter` to draft, diff, and compile a targeted cover letter:
+Each private application is self-contained:
 
 ```text
-Use $tailor-cover-letter to draft a cover letter for this job description:
-
-<paste job description>
+applications/<company-role>/
+  resume.md
+  _resume.tex
+  Morgan_Le_Resume.pdf
+  cover_letter.md                 # optional
+  _cover_letter.tex               # optional
+  Morgan_Le_Cover_Letter.pdf      # optional
 ```
 
-The workflow:
-1. Selects the baseline track from `pre-made/<track>/cover_letter.md`.
-2. Drafts `applications/<company-role>/cover_letter.md` using the structured 4-paragraph framework (Hook & Positioning, Core Proof & Accomplishments from `master/resume.md`, Builder Progression, Company Fit).
-3. Presents a unified diff and narrative rationale.
-4. Once approved, compiles to LaTeX and builds a normalized 1-page A4 PDF:
-   ```bash
-   uv run python scripts/md_to_cover_letter.py applications/<company-role>/cover_letter.md --build
-   ```
-5. Ensures zero unfilled placeholders and exact 1-page compliance.
-   To inspect differences at any time:
-   ```bash
-   uv run python scripts/diff_cover_letter.py pre-made/<track> applications/<company-role>
-   ```
+`applications/` is ignored by Git, so generated application materials remain local.
 
-## Use the local Resume Workspace
+## Useful commands
 
-The repository includes a local, self-hosted browser interface in `webapp/`. It opens with the verified master resume already loaded and stores each tailoring session locally. Codex still performs the analysis in the active Codex task; the web server does not start a second model session or require another API key.
-
-### First-time setup
-
-Run this command from the repository root:
+Build a Markdown resume with the default Jake template:
 
 ```bash
-uv sync
+uv run python scripts/md_to_latex.py \
+  applications/<company-role>/resume.md \
+  --template jake \
+  --build
 ```
 
-This installs the Python dependencies used for PDF inspection, normalization, and tests. Tectonic must be installed before running PDF builds.
-
-### Start the app
-
-Run:
+Compare a baseline with a tailored resume:
 
 ```bash
-./scripts/run_resume_app.sh
+uv run python scripts/diff_resume.py \
+  pre-made/<track> \
+  applications/<company-role>
 ```
 
-The launcher prints the address when the server is ready:
-
-```text
-Resume Tailoring Workspace: http://127.0.0.1:4173
-```
-
-Open that URL in a browser. Keep the terminal running while using the workspace and press `Ctrl+C` to stop it.
-
-To use a different port:
+Validate a completed resume:
 
 ```bash
-./scripts/run_resume_app.sh --port 4174
+uv run python .agents/skills/tailor-resume/scripts/validate_resume.py \
+  applications/<company-role>
 ```
 
-The server accepts only loopback hosts (`127.0.0.1`, `localhost`, or `::1`) so resume data is not exposed to the local network. A quick health check is available at `http://127.0.0.1:4173/api/health`.
-
-### Tailor a resume in the app
-
-The visual workflow is:
-
-1. Review the built-in master resume. The app reads `master/resume.md`; no resume upload is required.
-2. Select **Tailor for a job**, then enter the company, role, optional job link, and complete job description.
-3. Select **Prepare suggestions**. This creates a local session from a complete snapshot of the current master resume.
-4. Send the analysis request to the active Codex task:
-   - When the page is open in a Codex browser that supports workspace tools, ask Codex to analyze the saved Resume Workspace session. Codex can read the complete context and submit the recommendations directly.
-   - In another browser, select **Copy request for Codex**, paste the request into the active Codex task, wait for the analysis to finish, and then select **Check for suggestions**.
-5. Review one resume entry at a time in the center workspace. Select a bullet to see its recommendation and actions in the persistent right panel; use the section rail or Previous/Next controls instead of scrolling through one long document. For each bullet, approve the suggestion, keep the current wording, or select **Edit or ask AI** to edit it manually, remove it, confirm a missing fact, or request a different AI suggestion.
-6. Make an explicit Include or Exclude decision for every project. Only included projects require bullet-level review; every verified work position remains represented.
-7. After every recommendation has an explicit decision, build the PDF preview. If it exceeds one page, return to the specific fitting opportunities shown by the app; nothing is shortened or removed automatically.
-8. Export only after every decision is resolved and the current preview passes the one-page A4 checks.
-
-The exported files are written to `<company-role>/_resume.tex` and `<company-role>/Morgan_Le_Resume.pdf`. Export does not edit `master/resume.md`. If the target folder already exists, the app asks before overwriting that tailored version.
-
-### Local data and resuming work
-
-The workspace stores its disposable state under the gitignored `.resume/webapp/` directory:
-
-```text
-.resume/webapp/
-  sessions/    Active tailoring-session JSON
-  archive/     Archived sessions
-  previews/    Temporary PDF preview sources and output
-```
-
-Open **Sessions** in the app to resume or archive an earlier session. If `master/resume.md` changes after a session starts, the app marks that session as stale and requires reconciliation before applying its suggestions.
-
-### Troubleshooting
-
-- **`uv: command not found`:** install uv, then run `uv sync` from the repository root.
-- **`Tectonic is required`:** install Tectonic and confirm `tectonic --version` works in the same terminal.
-- **Port 4173 is already in use:** start the app with another loopback port, such as `./scripts/run_resume_app.sh --port 4174`.
-- **Suggestions do not appear:** make sure Codex finished the copied workspace request, then select **Check for suggestions**.
-- **A session says the master changed:** use the app's restart/reconciliation action so recommendations are regenerated against the current master resume.
-
-The master resume is read-only in the web interface. Workspace sessions, decision history, and previews are ignored by Git, while an exported tailored folder remains available for review and version control.
-
-## Build and validate manually
-
-Build a tailored resume or premade track from a folder:
-
-```bash
-./scripts/build_resume.sh "pre-made/software-engineer"
-```
-
-This writes only `<resume-folder>/Morgan_Le_Resume.pdf`. Validate it with:
-
-```bash
-uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "pre-made/software-engineer"
-```
-
-Build a reusable premade in its default Jake format:
-
-```bash
-./scripts/build_resume.sh "pre-made/finance-consulting"
-```
-
-Build its legacy Loc format explicitly:
-
-```bash
-./scripts/build_resume.sh "pre-made/finance-consulting/Loc"
-```
-
-When creating a new premade, first preserve the approved moderncv source in `Loc/`, then generate the matching Jake source with:
-
-```bash
-uv run python scripts/convert_loc_to_jake.py \
-  "pre-made/<purpose>/Loc/_resume.tex" \
-  "pre-made/<purpose>/Jake/_resume.tex"
-```
-
-The generated Jake source is standalone and follows `templates/Jake/_resume.tex`; no separate Jake style file is required for Overleaf.
-
-Run the validator tests with:
+Run the test suite:
 
 ```bash
 uv run python -m unittest discover -v
 ```
 
-The validator checks folder contents, protected historical and contact fields, numeric claims, work-position coverage, page size and count, extractable text, hyperlinks, PDF 1.5/classic cross-reference compatibility, and ATS-hostile presentation ligatures.
+## Optional visual workspace
 
-## Safety and privacy
+Start the local Resume Workspace if you prefer reviewing suggestions in a browser:
 
-- Never invent employers, titles, dates, responsibilities, technologies, metrics, or outcomes.
-- Treat only active, uncommented master-resume content as verified; never use commented-out resume items.
-- Do not change a historical job title merely to match a job posting.
-- Keep at least one substantive bullet for every verified work position in a tailored resume.
-- Select projects explicitly for each tailored resume; project exclusion never removes them from the master source.
-- Require explicit bullet-level decisions during tailoring and page fitting, plus explicit project-level inclusion decisions.
-- Treat every tailored resume as a one-page A4 document.
-- Review `master/resume.md` before making a fork public because it contains personal information.
-- Codex does not commit or push changes unless explicitly asked.
+```bash
+./scripts/run_resume_app.sh
+```
 
-See [`SPEC.md`](SPEC.md) for the full workflow contract.
+Open `http://127.0.0.1:4173`. The server binds to loopback only, stores session data under `.resume/`, and uses the active Codex conversation rather than starting a separate model session.
+
+## Public and private files
+
+Only the approved example resume and reusable system code belong in the public repository.
+
+| Path | Purpose | Tracked |
+| --- | --- | --- |
+| `public/` | Approved public resume and PDF | Yes |
+| `templates/` | Generic formatting templates | Yes |
+| `.agents/skills/`, `scripts/`, `webapp/` | Agentic workflow and tooling | Yes |
+| `master/` | Comprehensive personal resume | No |
+| `pre-made/` | Personal reusable baselines | No |
+| `applications/` | Tailored resumes and cover letters | No |
+| `.resume/` | Sessions, previews, and private backups | No |
+
+Previously committed private files remain in Git history until the history is rewritten. Ignoring them prevents future commits but does not erase earlier revisions.
+
+## Core guarantees
+
+- Never invent experience, metrics, technologies, dates, or outcomes.
+- Never change an official historical job title to match a posting.
+- Keep every verified work position represented in tailored resumes.
+- Treat projects as selectable; removing one from an application never removes it from the master resume.
+- Require explicit review before accepting rewritten content.
+- Produce exactly one A4 page for every tailored resume.
+- Never commit or push without explicit permission.
+
+See [AGENTS.md](AGENTS.md) for repository rules and [SPEC.md](SPEC.md) for the detailed workflow contract.
 
 ## License
 
