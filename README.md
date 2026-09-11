@@ -1,20 +1,25 @@
 # Resume tailoring with Codex
 
-This repository turns a comprehensive LaTeX resume into job-specific, one-page A4 resumes through either a conversational Codex workflow or the included local Resume Workspace web app.
+This repository publishes one approved resume and provides tooling for creating private, job-specific, one-page A4 resumes through either a conversational Codex workflow or the included local Resume Workspace web app.
 
-[`master/resume.md`](master/resume.md) is the verified source of truth in format-neutral Markdown. During tailoring, Codex reviews every education item and work role, then asks you to choose which projects belong before reviewing the selected projects' bullets. It does not invent facts or silently remove content to make a resume fit.
+The approved public artifact is available as [`public/resume.md`](public/resume.md) and [`public/Morgan_Le_Resume.pdf`](public/Morgan_Le_Resume.pdf). The comprehensive `master/resume.md`, reusable `pre-made/` variants, tailored `applications/`, and personalized cover letters remain local and are ignored by Git.
+
+During tailoring, Codex reviews every education item and work role, then asks you to choose which projects belong before reviewing the selected projects' bullets. It does not invent facts or silently remove content to make a resume fit.
 
 ### Repository structure
 
 ```text
-applications/                   Ephemeral tailored applications (output destination; periodically deleted)
+public/                         Only resume artifacts published by Git
+  resume.md                     Approved public FDE resume source
+  Morgan_Le_Resume.pdf          Approved public 1-page A4 resume
+applications/                   Private tailored applications (Git-ignored)
   <company-role>/
     resume.md                   Tailored Markdown resume
     cover_letter.md             Optional tailored cover letter
     Morgan_Le_Resume.pdf        Compiled 1-page A4 PDF
-master/
+master/                         Private canonical source (Git-ignored)
   resume.md                     Canonical Markdown resume (source of truth)
-pre-made/
+pre-made/                       Private reusable variants (Git-ignored)
   <purpose>/
     resume.md                   Curated format-neutral resume content
     cover_letter.md             Base cover letter template for this domain track
@@ -24,7 +29,7 @@ templates/
   Jake/                         Canonical original Jake source template (11pt)
   Loc/                          Canonical moderncv source template
   Vmock/                        Legacy compact 10pt template (discontinued)
-  cover-letter/                 Canonical letter template matching Jake style
+  cover-letter/                 Fictional public template matching Jake style
 .agents/skills/tailor-resume/   Repository-local skill, session helper, and validator
 .agents/skills/tailor-cover-letter/ Repository-local skill for tailoring cover letters
 scripts/build_resume.sh         Isolated Tectonic and PDF-compatibility build script
@@ -42,14 +47,14 @@ SPEC.md                         Detailed workflow contract
 pyproject.toml and uv.lock      Validator dependencies
 ```
 
-`master/` remains the canonical resume history; `pre-made/` contains reusable general-purpose variants across 5 tracks:
+The local, Git-ignored `master/` remains the canonical resume history; local `pre-made/` contains reusable general-purpose variants across 5 tracks:
 - `finance-consulting`
 - `forward-deployed-engineer`
 - `product-decision-data-science`
 - `quantitative-research-finance`
 - `software-data-engineering`
 
-Each reusable premade contains its `resume.md` content source, domain `cover_letter.md`, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Loc`; `Vmock` is discontinued).
+Each reusable premade remains on the local machine with its `resume.md` content source, domain `cover_letter.md`, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`. Formatting templates live under `templates/` (`Jake`, `Loc`; `Vmock` is discontinued).
 
 To render and build a Markdown resume into one of the supported LaTeX formats:
 
@@ -89,9 +94,16 @@ uv sync
 ## Set up your resume
 
 1. Fork or clone this repository.
-2. Update personal details and verified history in `master/resume.md`.
-3. Review `AGENTS.md` and adjust content policies if needed.
-4. Build any pre-made track or application resume:
+2. Create the private workspace and copy the public resume as a starting point:
+
+   ```bash
+   mkdir -p master pre-made applications
+   cp public/resume.md master/resume.md
+   ```
+
+3. Update personal details and verified history in the private `master/resume.md`.
+4. Review `AGENTS.md` and adjust content policies if needed.
+5. Build any local pre-made track or application resume:
 
    ```bash
    ./scripts/build_resume.sh pre-made/software-engineer

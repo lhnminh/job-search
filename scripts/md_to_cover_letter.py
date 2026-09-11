@@ -16,7 +16,7 @@ MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ]
 DATE_PATTERN = re.compile(
-    r"^(?:Date:\s*)?((?:(?:" + "|".join(MONTHS) + r")\s+\d{1,2},?\s+\d{4})|(?:\d{1,2}\s+(?:" + "|".join(MONTHS) + r")\s+\d{4})|(?:\d{4}-\d{2}-\d{2})|(?:_{3,}))\s*$",
+    r"^(?:Date:\s*)?((?:(?:" + "|".join(MONTHS) + r")\s+\d{1,2},?\s+\d{4})|(?:\d{1,2}\s+(?:" + "|".join(MONTHS) + r")\s+\d{4})|(?:\d{4}-\d{2}-\d{2})|(?:_{3,})|(?:\[Date[^\]]*\]))\s*$",
     re.IGNORECASE
 )
 CLOSING_PATTERN = re.compile(
@@ -28,14 +28,14 @@ OPENING_PATTERN = re.compile(r"^(Dear\s+[^,\n:]+)[,:]?\s*$", re.IGNORECASE)
 
 @dataclass
 class CoverLetter:
-    name: str = "Morgan Le"
+    name: str = "Your Name"
     contact_items: list[str] = field(default_factory=list)
     date: str = ""
     recipient_lines: list[str] = field(default_factory=list)
     opening: str = "Dear Hiring Team,"
     paragraphs: list[str] = field(default_factory=list)
     closing: str = "Sincerely,"
-    signature: str = "Morgan Le"
+    signature: str = "Your Name"
 
 
 def md_inline_to_latex(text: str) -> str:
@@ -144,14 +144,6 @@ def parse_md_cover_letter(content: str) -> CoverLetter:
             # Reached date or recipient block
             break
 
-    # If contact items only have phone/email, add standard LinkedIn and Portfolio links
-    has_linkedin = any("linkedin" in item.lower() for item in letter.contact_items)
-    has_website = any("lhnminh" in item.lower() or "github" in item.lower() for item in letter.contact_items)
-    if not has_linkedin:
-        letter.contact_items.append(r"\href{https://www.linkedin.com/in/morganhle/}{\underline{\smash{linkedin.com/in/morganhle}}}")
-    if not has_website:
-        letter.contact_items.append(r"\href{https://lhnminh.github.io/}{\underline{\smash{lhnminh.github.io}}}")
-
     # Sort contact items to canonical Jake order: phone, email, linkedin, website
     letter.contact_items = sorted(letter.contact_items, key=contact_item_priority)
 
@@ -189,7 +181,7 @@ def parse_md_cover_letter(content: str) -> CoverLetter:
         if OPENING_PATTERN.match(line):
             break
         # Guard against applicant address or date lines accidentally caught in recipient
-        if any(k in line.lower() for k in ["apt", "new york, ny 10025", "date:"]):
+        if any(k in line.lower() for k in ["apt", "date:"]) or DATE_PATTERN.match(line):
             i += 1
             continue
         letter.recipient_lines.append(md_inline_to_latex(line))
@@ -268,17 +260,21 @@ def render_latex_cover_letter(letter: CoverLetter) -> str:
 \usepackage{lmodern}
 \usepackage[hidelinks]{hyperref}
 
+% Fix LaTeX letter.cls rubber vertical centering so header position is locked to Domino reference
+\makeatletter
+\def\@texttop{}
+\makeatother
+
 % Margin controls inherited from the repository cover-letter template.
-\topmargin=-1.55in
-\textheight=10.0in
+\topmargin=-1.251in
+\textheight=9.6in
 \oddsidemargin=0pt
 \textwidth=6.5in
 
 \begin{document}
 
 \signature{<<<SIGNATURE>>>}
-\date{<<<DATE>>>}
-\longindentation=0pt
+<<<DATE_LINE>>>\longindentation=0pt
 \let\raggedleft\raggedright
 
 \begin{letter}{<<<RECIPIENT>>>}
@@ -290,7 +286,7 @@ def render_latex_cover_letter(letter: CoverLetter) -> str:
     \vspace{0pt}
     {\small <<<CONTACT_LINE>>>\par}
 \end{center}
-\vspace*{0.15in}
+\vspace*{1.2in}
 
 \opening{<<<OPENING>>>}
 
@@ -308,7 +304,7 @@ def render_latex_cover_letter(letter: CoverLetter) -> str:
     # Terminate each line-break command before the next recipient line. This
     # prevents placeholder lines such as ``[Company Name]`` from being parsed
     # as the optional spacing argument to ``\\`` by LaTeX.
-    recipient_text = " \\\\{} \n".join(letter.recipient_lines) if letter.recipient_lines else "Hiring Team"
+    recipient_text = " \\\\{}\n".join(letter.recipient_lines) if letter.recipient_lines else "Hiring Team"
 
     body_paras = []
     for para in letter.paragraphs:
@@ -317,8 +313,10 @@ def render_latex_cover_letter(letter: CoverLetter) -> str:
 
     body_text = "\n\n".join(body_paras)
 
+    date_line = f"\\date{{{md_inline_to_latex(letter.date)}}}\n" if letter.date else ""
+
     output = template.replace("<<<NAME>>>", letter.name)
-    output = output.replace("<<<DATE>>>", md_inline_to_latex(letter.date))
+    output = output.replace("<<<DATE_LINE>>>", date_line)
     output = output.replace("<<<CONTACT_LINE>>>", contact_line)
     output = output.replace("<<<RECIPIENT>>>", recipient_text)
     output = output.replace("<<<OPENING>>>", letter.opening)

@@ -27,14 +27,41 @@ from session_ledger import (  # noqa: E402
 )
 
 
+SESSION_SOURCE = """# Sample Applicant
+
+[email@example.com](mailto:email@example.com) | 212-555-0100
+
+## Education
+
+### Example University | Example Degree
+*2020 – 2024*
+- Completed a representative course of study.
+
+## Experience
+
+### Example Company | Analyst
+*2024 – 2025*
+- Built a repeatable analytical workflow.
+
+## Projects
+
+### Project One | Test Fixture
+*2025*
+- Built the first deterministic test project.
+
+### Project Two | Test Fixture
+*2026*
+- Built the second deterministic test project.
+"""
+
+
 class SessionLedgerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.repository = Path(self.temporary_directory.name)
         master = self.repository / MASTER_SOURCE_RELATIVE_PATH
         master.parent.mkdir(parents=True)
-        source = (REPOSITORY_ROOT / MASTER_SOURCE_RELATIVE_PATH).read_text(encoding="utf-8")
-        master.write_text(source, encoding="utf-8")
+        master.write_text(SESSION_SOURCE, encoding="utf-8")
         create_session(
             self.repository,
             "example-role",

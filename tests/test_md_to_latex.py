@@ -11,9 +11,9 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "scripts"))
 from md_to_latex import parse_md_resume, render_jake, render_vmock, render_loc  # noqa: E402
 
 
-SAMPLE_MD = """# Morgan Le
+SAMPLE_MD = """# Sample Applicant
 
-[ml5536@columbia.edu](mailto:ml5536@columbia.edu) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
+[email@example.com](mailto:email@example.com) | 212-555-0100 | [portfolio.example](https://example.com/) | [linkedin.com/in/your-profile](https://www.linkedin.com/in/your-profile/)
 
 ## Education
 
@@ -38,27 +38,21 @@ SAMPLE_MD = """# Morgan Le
 
 
 class MdToLatexTests(unittest.TestCase):
-    def test_every_premade_has_parseable_markdown(self) -> None:
-        premade_root = REPOSITORY_ROOT / "pre-made"
-        premade_directories = sorted(path for path in premade_root.iterdir() if path.is_dir())
+    def test_public_resume_has_parseable_markdown(self) -> None:
+        markdown_path = REPOSITORY_ROOT / "public" / "resume.md"
+        self.assertTrue(markdown_path.is_file(), f"Missing {markdown_path}")
 
-        self.assertGreater(len(premade_directories), 0)
-        for directory in premade_directories:
-            with self.subTest(premade=directory.name):
-                markdown_path = directory / "resume.md"
-                self.assertTrue(markdown_path.is_file(), f"Missing {markdown_path}")
-
-                resume = parse_md_resume(markdown_path.read_text(encoding="utf-8"))
-                self.assertTrue(resume.name)
-                self.assertTrue(resume.email)
-                self.assertGreater(len(resume.sections), 0)
-                self.assertTrue(all(section.entries for section in resume.sections))
+        resume = parse_md_resume(markdown_path.read_text(encoding="utf-8"))
+        self.assertTrue(resume.name)
+        self.assertTrue(resume.email)
+        self.assertGreater(len(resume.sections), 0)
+        self.assertTrue(all(section.entries for section in resume.sections))
 
     def test_parse_md_resume(self) -> None:
         resume = parse_md_resume(SAMPLE_MD)
-        self.assertEqual("Morgan Le", resume.name)
-        self.assertEqual("347-774-6979", resume.phone)
-        self.assertEqual("ml5536@columbia.edu", resume.email)
+        self.assertEqual("Sample Applicant", resume.name)
+        self.assertEqual("212-555-0100", resume.phone)
+        self.assertEqual("email@example.com", resume.email)
         self.assertEqual(3, len(resume.sections))
         self.assertEqual("Education", resume.sections[0].name)
         self.assertEqual("Relevant Experience", resume.sections[1].name)
@@ -74,9 +68,9 @@ class MdToLatexTests(unittest.TestCase):
         resume = parse_md_resume(SAMPLE_MD)
         jake_tex = render_jake(resume)
         self.assertIn(r"\documentclass[a4paper,11pt]{article}", jake_tex)
-        self.assertIn(r"\href{mailto:ml5536@columbia.edu}{\underline{\smash{ml5536@columbia.edu}}}", jake_tex)
-        self.assertIn(r"\href{https://www.linkedin.com/in/morganhle/}{\underline{\smash{linkedin.com/in/morganhle}}}", jake_tex)
-        self.assertIn(r"\href{https://lhnminh.github.io/}{\underline{\smash{lhnminh.github.io}}}", jake_tex)
+        self.assertIn(r"\href{mailto:email@example.com}{\underline{\smash{email@example.com}}}", jake_tex)
+        self.assertIn(r"\href{https://www.linkedin.com/in/your-profile/}{\underline{\smash{linkedin.com/in/your-profile}}}", jake_tex)
+        self.assertIn(r"\href{https://example.com/}{\underline{\smash{portfolio.example}}}", jake_tex)
         self.assertIn(r"\href{https://www.sea.com/products/shopee}{Shopee}", jake_tex)
         self.assertNotIn(r"\href{https://www.sea.com/products/shopee}{\underline{Shopee}}", jake_tex)
         self.assertIn(r"{#1\par\vspace{-2pt}}", jake_tex)
@@ -91,9 +85,9 @@ class MdToLatexTests(unittest.TestCase):
         resume = parse_md_resume(SAMPLE_MD)
         vmock_tex = render_vmock(resume)
         self.assertIn(r"\documentclass[a4paper,10pt]{article}", vmock_tex)
-        self.assertIn(r"\href{mailto:ml5536@columbia.edu}{\underline{\smash{ml5536@columbia.edu}}}", vmock_tex)
-        self.assertIn(r"\href{https://www.linkedin.com/in/morganhle/}{\underline{\smash{linkedin.com/in/morganhle}}}", vmock_tex)
-        self.assertIn(r"\href{https://lhnminh.github.io/}{\underline{\smash{lhnminh.github.io}}}", vmock_tex)
+        self.assertIn(r"\href{mailto:email@example.com}{\underline{\smash{email@example.com}}}", vmock_tex)
+        self.assertIn(r"\href{https://www.linkedin.com/in/your-profile/}{\underline{\smash{linkedin.com/in/your-profile}}}", vmock_tex)
+        self.assertIn(r"\href{https://example.com/}{\underline{\smash{portfolio.example}}}", vmock_tex)
         self.assertIn(r"\href{https://www.sea.com/products/shopee}{Shopee}", vmock_tex)
         self.assertNotIn(r"\href{https://www.sea.com/products/shopee}{\underline{Shopee}}", vmock_tex)
         self.assertIn(r"{#1\par\vspace{-2pt}}", vmock_tex)

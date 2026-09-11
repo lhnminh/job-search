@@ -2,8 +2,19 @@
 tmp/
 .resume/
 
-# Master rendered PDF (build artifact)
-/master/Morgan_Le_Resume.pdf
+# Private resume workspace and application materials
+/master/
+/pre-made/
+/applications/
+
+# Compiled cover letters are private artifacts
+/templates/cover-letter/*.pdf
+
+# Local configuration
+.env
+.env.*
+!.env.example
+*.local
 
 # Python environments and caches
 .venv/

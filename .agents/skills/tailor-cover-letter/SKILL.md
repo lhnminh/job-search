@@ -28,19 +28,7 @@ Create a new application folder (e.g. `applications/<company-role>/`, lowercase 
 
 ### 2. Formulate the Tailored `cover_letter.md`
 Generate `<target-folder>/cover_letter.md`:
-- **Contact Header**: Standard name and clickable links matching Jake styling:
-  ```markdown
-  # Morgan Le
-
-  [ml5536@columbia.edu](mailto:ml5536@columbia.edu) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)
-
-  <Current Date, e.g. October 15, 2026>
-
-  <Target Company Name>
-  <Target Office Location / Team, e.g. San Francisco, CA>
-
-  Dear <Target Company or Team> Hiring Team,
-  ```
+- **Contact Header**: Copy the name and complete clickable contact line exactly from the private local `master/resume.md`. Never source contact details from the public template or hardcode them in the skill. Follow the header with the current date, target company, target office or team, and a concrete salutation.
 - **Paragraph 1 (The Hook & Positioning)**: Role, company, current degree (Columbia MS Data Science + TA), and the overarching narrative arc linking previous operations/consulting/analytics to this specific technical or business discipline.
 - **Paragraph 2 (Core Proof & Accomplishments)**: 1–2 deep, quantified achievements (e.g., BCG $10B infrastructure initiative, Shopee $100K ARR & 20% latency reduction, Ericsson automation) showing how Morgan moves between stakeholders and execution. *Never invent unverified metrics.*
 - **Paragraph 3 (Technical & Builder Progression)**: Independent applications, hackathons, cloud systems, and coursework at Columbia demonstrating the hands-on engineering or modeling skills relevant to the role.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 import tempfile
 import unittest
@@ -30,13 +31,19 @@ class ResumeValidationTests(unittest.TestCase):
         sys.path.insert(0, str(REPOSITORY_ROOT / "scripts"))
         from md_to_latex import parse_md_resume, render_loc
 
-        cls.source = (REPOSITORY_ROOT / MASTER_SOURCE_RELATIVE_PATH).read_text(encoding="utf-8")
+        cls.source = (REPOSITORY_ROOT / "public" / "resume.md").read_text(encoding="utf-8")
+        cls.source += """
+
+### Example Validation Project | Test Fixture
+*2026*
+- Built a deterministic fixture for resume-validation tests.
+"""
         cls.latex_source = render_loc(parse_md_resume(cls.source))
 
     def test_parses_reference_entries(self) -> None:
         entries = parse_resume(self.source)
-        self.assertEqual(11, len(entries))
-        self.assertEqual(31, sum(len(entry.bullets) for entry in entries))
+        self.assertGreaterEqual(len(entries), 2)
+        self.assertGreaterEqual(sum(len(entry.bullets) for entry in entries), 2)
 
     def test_parses_jake_entries_and_bullets(self) -> None:
         source = r"""
@@ -62,25 +69,25 @@ class ResumeValidationTests(unittest.TestCase):
         source = r"""
 \begin{document}
 \begin{center}
-  \textbf{\Huge \scshape Morgan Le} \\ \vspace{1pt}
-  \small 347-774-6979 $|$
-  \href{mailto:ml5536@columbia.edu}{\underline{ml5536@columbia.edu}} $|$
-  \href{https://www.linkedin.com/in/morganhle/}{\underline{linkedin.com/in/morganhle}} $|$
-  \href{https://github.com/lhnminh}{\underline{github.com/lhnminh}}
+  \textbf{\Huge \scshape Sample Applicant} \\ \vspace{1pt}
+  \small 212-555-0100 $|$
+  \href{mailto:email@example.com}{\underline{email@example.com}} $|$
+  \href{https://www.linkedin.com/in/your-profile/}{\underline{linkedin.com/in/your-profile}} $|$
+  \href{https://github.com/your-handle}{\underline{github.com/your-handle}}
 \end{center}
 \end{document}
 """
         self.assertEqual(
             {
-                "firstname": ("Morgan",),
-                "familyname": ("Le",),
-                "mobile": ("347-774-6979",),
-                "email": ("ml5536@columbia.edu",),
+                "firstname": ("Sample",),
+                "familyname": ("Applicant",),
+                "mobile": ("212-555-0100",),
+                "email": ("email@example.com",),
                 "linkedin": (
-                    "https://www.linkedin.com/in/morganhle/",
-                    "linkedin.com/in/morganhle",
+                    "https://www.linkedin.com/in/your-profile/",
+                    "linkedin.com/in/your-profile",
                 ),
-                "github": ("https://github.com/lhnminh", "github.com/lhnminh"),
+                "github": ("https://github.com/your-handle", "github.com/your-handle"),
             },
             _contact_fields(source),
         )
@@ -94,11 +101,12 @@ class ResumeValidationTests(unittest.TestCase):
         errors = validate_tailored_tex(self.source, changed)
         self.assertTrue(any("Historical title changed" in error for error in errors))
 
-    def test_rejects_old_mobile_number(self) -> None:
-        changed = self.latex_source.replace(
-            "\\mobile{347-774-6979}",
-            "\\mobile{(+84)93 658-5869}",
-            1,
+    def test_rejects_changed_mobile_number(self) -> None:
+        changed = re.sub(
+            r"\\mobile\{[^}]+\}",
+            r"\\mobile{000-000-0000}",
+            self.latex_source,
+            count=1,
         )
         errors = validate_tailored_tex(self.source, changed)
         self.assertIn("Contact field changed or is missing: \\mobile", errors)
@@ -120,13 +128,13 @@ class ResumeValidationTests(unittest.TestCase):
         self.assertIn("Missing experience entry: Peloton", errors)
 
     def test_allows_an_explicitly_excluded_project(self) -> None:
-        housing_start = self.latex_source.index(
-            "{\\customcventry{\\href{https://github.com/lhnminh/Kaggle-Housing-Prices-Comp}{Housing Prices Competition}}"
+        first_project_start = self.latex_source.index(
+            "{\\customcventry{\\href{https://github.com/lhnminh/zephyr-aq}{ZephyrAQ}}"
         )
-        axiom_start = self.latex_source.index(
-            "{\\customcventry{\\href{https://github.com/lhnminh/axiom}{Axiom}}"
+        second_project_start = self.latex_source.index(
+            "{\\customcventry{Example Validation Project}"
         )
-        changed = self.latex_source[:housing_start] + self.latex_source[axiom_start:]
+        changed = self.latex_source[:first_project_start] + self.latex_source[second_project_start:]
         errors = validate_tailored_completeness(self.source, changed)
         self.assertEqual([], errors)
 

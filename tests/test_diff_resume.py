@@ -9,18 +9,18 @@ from scripts.md_to_latex import parse_md_resume
 
 class DiffResumeTests(unittest.TestCase):
     def test_resolve_resume_path(self) -> None:
-        p = resolve_resume_path("pre-made/finance-consulting")
+        p = resolve_resume_path("public")
         self.assertTrue(p.name == "resume.md")
         self.assertTrue(p.exists())
 
     def test_structured_diff(self) -> None:
-        p1 = Path("pre-made/finance-consulting/resume.md").read_text(encoding="utf-8")
-        p2 = Path("pre-made/software-data-engineering/resume.md").read_text(encoding="utf-8")
+        p1 = Path("public/resume.md").read_text(encoding="utf-8")
+        p2 = p1.replace("Relevant Experience", "Selected Experience", 1)
         r1 = parse_md_resume(p1)
         r2 = parse_md_resume(p2)
         diff_str = structured_diff(r1, r2, use_color=False)
         self.assertIn("Summary:", diff_str)
-        self.assertIn("Columbia University", diff_str)
+        self.assertIn("Selected Experience", diff_str)
 
     def test_unified_text_diff(self) -> None:
         text1 = "# Morgan Le\n- Line 1\n"

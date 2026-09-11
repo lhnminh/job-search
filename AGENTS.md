@@ -4,6 +4,13 @@
 
 This repository maintains one comprehensive resume reference and multiple application-specific resume versions.
 
+## Public repository boundary
+
+- `public/` is the only tracked resume publication folder. It contains the approved public Markdown resume and one-page PDF.
+- `master/`, `pre-made/`, and `applications/` are private local workspace directories. Keep them on disk, but never stage or commit them.
+- Personalized cover letters and compiled cover-letter PDFs are private. Public cover-letter templates and tooling must use fictional example details only.
+- Never copy private material into a tracked location unless the user explicitly approves that exact artifact for publication.
+
 Before editing, identify which of these the user is requesting:
 
 1. A change to the comprehensive reference in `master/resume.md`.
