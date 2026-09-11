@@ -20,7 +20,7 @@ Bring your own resume, add any reusable content or layout templates you prefer, 
 ### 1. Clone and install
 
 ```bash
-git clone <repository-url>
+git clone [<repository-url>](https://github.com/lhnminh/job-search)
 cd job-search
 
 # macOS
