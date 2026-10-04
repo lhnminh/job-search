@@ -140,6 +140,8 @@ Cover letters follow the same principles as the resume tailoring workflow:
   3. *Technical & Builder Progression*: Real projects, hackathons, cloud systems, and coursework.
   4. *Company Alignment & Call to Action*: Specific interest in the company's product, team, or challenge + value proposition.
 - **Zero Placeholders**: Placeholders like `[Company Name]`, `[Position Title]`, or `______` must be completely replaced with concrete target details before building.
+- **MongoDB Project**: Always touch on the verified MongoDB project ([Self-Improving Computer Use](https://github.com/lhnminh/recursive-computer-use) | MongoDB's Harness Engineering Hackathon 3rd Place, MongoDB Atlas & Vector Search, 9× speedup) in the builder/technical progression narrative.
+- **No Location / Address**: Cover letters must not include applicant location or company address/location lines. The recipient block contains only the company name (and optional team).
 - **Strict 1-Page A4 Budget**: The letter must fit on a single A4 page.
 - **Build & Verification**:
   - Compile and build: `uv run python scripts/md_to_cover_letter.py <target-folder>/cover_letter.md --build`

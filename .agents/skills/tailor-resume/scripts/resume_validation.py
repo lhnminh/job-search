@@ -22,6 +22,7 @@ CLAIM_RE = re.compile(
 MASTER_SOURCE_RELATIVE_PATH = Path("master") / "resume.md"
 PDF_COMPATIBILITY_HEADER = "%PDF-1.5"
 PRESENTATION_LIGATURES = frozenset("\ufb00\ufb01\ufb02\ufb03\ufb04\ufb05\ufb06")
+MINIMUM_EXPERIENCE_BULLETS = 2
 
 
 class ResumeValidationError(ValueError):
@@ -521,20 +522,22 @@ def validate_tailored_completeness(root_source: str, proposed_source: str) -> li
         if "experience" in entry.section.casefold()
     }
     errors: list[str] = []
+    for proposed_entry in proposed_entries:
+        if "experience" not in proposed_entry.section.casefold():
+            continue
+        proposed_substantive = sum(not bullet.is_metadata for bullet in proposed_entry.bullets)
+        if proposed_substantive < MINIMUM_EXPERIENCE_BULLETS:
+            errors.append(
+                f"Too few substantive bullets for {proposed_entry.title}: "
+                f"expected at least {MINIMUM_EXPERIENCE_BULLETS}, got {proposed_substantive}"
+            )
+
     for root_entry in root_entries:
         if "experience" not in root_entry.section.casefold():
             continue
         proposed_entry = proposed_experience.get(root_entry.title.casefold())
         if proposed_entry is None:
             errors.append(f"Missing experience entry: {root_entry.title}")
-            continue
-        root_substantive = sum(not bullet.is_metadata for bullet in root_entry.bullets)
-        proposed_substantive = sum(not bullet.is_metadata for bullet in proposed_entry.bullets)
-        minimum = min(1, root_substantive)
-        if proposed_substantive < minimum:
-            errors.append(
-                f"Too few substantive bullets for {root_entry.title}: expected at least {minimum}, got {proposed_substantive}"
-            )
     return errors
 
 

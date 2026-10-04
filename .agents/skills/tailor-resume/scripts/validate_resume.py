@@ -57,6 +57,7 @@ def main() -> int:
         "Morgan_Le_Resume.pdf",
         "resume.md",
         "cover_letter.md",
+        "_cover_letter.tex",
         "job_description.txt",
         "Morgan_Le_Cover_Letter.pdf",
     }

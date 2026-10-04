@@ -173,6 +173,18 @@ def parse_md_resume(md_content: str) -> MdResume:
             )
             if current_entry is not None:
                 current_entry.bullets.append(MdBullet(text=bullet_raw, is_metadata=is_meta))
+            elif current_section is not None and "skill" in current_section.name.casefold():
+                skill_match = re.match(r"^(?:\*\*([^*]+?)\*\*|([^*:]+))\s*(.*)$", bullet_raw)
+                if skill_match and skill_match.group(3).strip().lstrip(":").strip():
+                    cat = (skill_match.group(1) or skill_match.group(2)).strip().rstrip(":")
+                    val = skill_match.group(3).strip().lstrip(":").strip()
+                    current_section.entries.append(
+                        MdEntry(title=cat, bullets=[MdBullet(text=val)])
+                    )
+                else:
+                    current_section.entries.append(
+                        MdEntry(title="", bullets=[MdBullet(text=bullet_raw)])
+                    )
             continue
 
     return resume
@@ -280,6 +292,30 @@ def render_jake(resume: MdResume) -> str:
         sec_title = section.name
         is_project = "project" in sec_title.casefold()
         is_education = "education" in sec_title.casefold()
+        is_skills = "skill" in sec_title.casefold()
+
+        if is_skills:
+            items = []
+            for entry in section.entries:
+                cat = md_inline_to_latex(entry.title.rstrip(":"))
+                skills_list = ", ".join(
+                    md_inline_to_latex(b.text) for b in entry.bullets
+                ) if entry.bullets else md_inline_to_latex(entry.subtitle)
+                if cat:
+                    items.append(f"\\textbf{{{cat}}}{{: {skills_list}}}")
+                else:
+                    items.append(skills_list)
+            items_str = " \\\\\n     ".join(items)
+            sec_out = [
+                f"\\section{{{md_inline_to_latex(sec_title)}}}",
+                " \\begin{itemize}[leftmargin=0.15in, label={}]",
+                "    \\small{\\item{",
+                f"     {items_str}",
+                "    }}",
+                " \\end{itemize}",
+            ]
+            sections_tex.append("\n".join(sec_out))
+            continue
 
         sec_out = [f"\\section{{{md_inline_to_latex(sec_title)}}}", "\\resumeSubHeadingListStart"]
         for entry in section.entries:
@@ -410,6 +446,30 @@ def render_vmock(resume: MdResume) -> str:
     for section in resume.sections:
         sec_title = section.name
         is_project = "project" in sec_title.casefold()
+        is_skills = "skill" in sec_title.casefold()
+
+        if is_skills:
+            items = []
+            for entry in section.entries:
+                cat = md_inline_to_latex(entry.title.rstrip(":"))
+                skills_list = ", ".join(
+                    md_inline_to_latex(b.text) for b in entry.bullets
+                ) if entry.bullets else md_inline_to_latex(entry.subtitle)
+                if cat:
+                    items.append(f"\\textbf{{{cat}}}{{: {skills_list}}}")
+                else:
+                    items.append(skills_list)
+            items_str = " \\\\\n     ".join(items)
+            sec_out = [
+                f"\\section{{{md_inline_to_latex(sec_title)}}}",
+                " \\begin{itemize}[leftmargin=0.15in, label={}]",
+                "    \\small{\\item{",
+                f"     {items_str}",
+                "    }}",
+                " \\end{itemize}",
+            ]
+            sections_tex.append("\n".join(sec_out))
+            continue
 
         sec_out = [f"\\section{{{md_inline_to_latex(sec_title)}}}", "\\resumeSubHeadingListStart"]
         for entry in section.entries:
@@ -505,6 +565,20 @@ def render_loc(resume: MdResume) -> str:
     sections_tex = []
     for section in resume.sections:
         sec_title = section.name
+        if "skill" in sec_title.casefold():
+            sec_out = [f"\\section{{{md_inline_to_latex(sec_title)}}}"]
+            for entry in section.entries:
+                cat = md_inline_to_latex(entry.title.rstrip(":"))
+                skills_list = ", ".join(
+                    md_inline_to_latex(b.text) for b in entry.bullets
+                ) if entry.bullets else md_inline_to_latex(entry.subtitle)
+                if cat:
+                    sec_out.append(f"{{\\customcawards{{0.15em}}{{\\bfseries {cat}: \\mdseries {skills_list}}}{{\\color{{white}} X}}{{}}}}")
+                else:
+                    sec_out.append(f"{{\\customcawards{{0.15em}}{{\\mdseries {skills_list}}}{{\\color{{white}} X}}{{}}}}")
+            sections_tex.append("\n\n".join(sec_out))
+            continue
+
         sec_out = [f"\\section{{{md_inline_to_latex(sec_title)}}}"]
         for entry in section.entries:
             title_tex = md_inline_to_latex(entry.title)

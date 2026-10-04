@@ -102,6 +102,29 @@ class MdToLatexTests(unittest.TestCase):
         self.assertIn(r"\customcventry", loc_tex)
         self.assertIn(r"\$100K", loc_tex)
 
+    def test_render_technical_skills(self) -> None:
+        md_skills = """# Test User
+test@example.com | 123-456-7890
+
+## Technical Skills
+- **Languages:** Python, TypeScript, SQL
+- **Frameworks & Systems:** React, FastAPI, PostgreSQL
+"""
+        resume = parse_md_resume(md_skills)
+        self.assertEqual(1, len(resume.sections))
+        self.assertEqual("Technical Skills", resume.sections[0].name)
+        self.assertEqual(2, len(resume.sections[0].entries))
+        self.assertEqual("Languages", resume.sections[0].entries[0].title)
+        self.assertEqual("Python, TypeScript, SQL", resume.sections[0].entries[0].bullets[0].text)
+
+        jake_tex = render_jake(resume)
+        body = jake_tex.partition(r"\begin{document}")[2]
+        self.assertIn(r"\section{Technical Skills}", body)
+        self.assertIn(r"\textbf{Languages}{: Python, TypeScript, SQL}", body)
+        self.assertIn(r"\textbf{Frameworks \& Systems}{: React, FastAPI, PostgreSQL}", body)
+        self.assertNotIn(r"\resumeSubheading", body)
+        self.assertNotIn(r"\resumeItem", body)
+
 
 if __name__ == "__main__":
     unittest.main()

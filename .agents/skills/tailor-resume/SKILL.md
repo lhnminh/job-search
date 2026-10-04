@@ -10,6 +10,8 @@ Work directly in the current Codex or Antigravity conversation. Follow `AGENTS.m
 > **CRITICAL RULE**: Do NOT inspect, read, list, grep, or search the `applications/` directory. Resumes in `applications/` are ephemeral and periodically deleted by the user; browsing them is a waste of time. All tailoring references come exclusively from `pre-made/` (for track baselines) and `master/resume.md` (for verified facts, projects, and skills). `applications/` is strictly a write destination.
 >
 > **DISCONTINUED TEMPLATE RULE**: Never use or propose the Vmock template (`--template vmock` / `templates/Vmock/`). It is discontinued. Resumes must always be compiled using the standard Jake template (`--template jake`). If content overflows, shorten bullet points and trim wording.
+>
+> **TWO-BULLET EXPERIENCE RULE**: Every listed job must have at least two substantive accomplishment or responsibility bullets. A technologies/tools line does not count toward the minimum. Never create an unverified second bullet to satisfy this rule; if `master/resume.md` does not contain enough verified material, stop and ask the user for another verified fact. Do not present a resume as ready, compile it, or approve it while any job has fewer than two substantive bullets.
 
 ## Primary Mode: Fast 1-Turn Batch Proposal & Diff Review
 
@@ -29,11 +31,30 @@ Create a new application folder (e.g. `applications/<company-role>/`, lowercase 
 
 ### 2. Formulate the Tailored `resume.md`
 Generate `<target-folder>/resume.md`:
-- **Mandatory Experience**: Every verified employer and role must retain at least one substantive bullet point. Allocate more bullets/depth to roles matching the JD.
-- **Projects Portfolio**: Include 1–2 high-relevance projects from `master/resume.md` that provide direct proof of skills asked for in the JD.
-- **Technical Skills**: Align keywords and tools with the JD. Strictly use verified skills from `master/resume.md`—never invent technologies or proficiencies.
+- **Contact Header Invariance**: The contact line must strictly match canonical `[ml5536@columbia.edu](mailto:ml5536@columbia.edu) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)`. Never alter email (e.g. to personal gmail) or reformat links, as this will fail validation.
+- **Mandatory Experience**: Every verified employer and role must retain at least two substantive bullet points. Technologies/tools metadata does not count. Allocate more bullets/depth to roles matching the JD, but never reduce any role below two substantive bullets.
+- **Projects Portfolio Selection Matrix**: Select 1–2 high-relevance projects from `master/resume.md` matching the target discipline:
+  - *Software Engineering / Full-Stack / Systems*: `Dwellwise` (WebMCP, TypeScript, 3D/React Three Fiber, PostgreSQL) and/or `ZephyrAQ` (FastAPI, PostgreSQL, Next.js).
+  - *AI / Agent Engineering / Applied LLM*: `ZephyrAQ` (DataHub context, Gemini, agent hackathon, auditable histories) and/or `Axiom` (Swift, PDFKit, LLM APIs) or `Dwellwise` (WebMCP agent tool integration).
+  - *Data Science / Machine Learning / Analytics*: `Housing Prices Competition` (Kaggle top 8%, scikit-learn, XGBoost) and/or `ZephyrAQ` (geospatial feature engineering, multi-source pipeline).
+  - *Consulting / Strategy / Product*: `ZephyrAQ` (multi-source investigation, executive presentation) or `Axiom` (collaborative build, rapid product delivery).
+- **Coursework Alignment**: Dynamically select 4–5 verified courses per role:
+  - *SWE / Systems*: Advanced Algorithm, Computer Systems, Database System, Machine Learning.
+  - *AI / ML / Agent*: Machine Learning, Natural Language Processing, Agentic Engineering, Statistical Inference & Modelling.
+  - *Data Science / Decision Science*: Statistical Inference & Modelling, Machine Learning, Predictive Analysis, Econometrics.
+  - *Consulting / Strategy / BizOps*: Econometrics, Predictive Analysis, Database System, Advanced Algorithm.
+- **Technical Skills Section vs Embedded Technologies**:
+  - For technical tracks (SWE, MLE, Agent, Data Science), add a dedicated `## Technical Skills` section at the bottom (Jake renderer supports standard category lines):
+    ```markdown
+    ## Technical Skills
+    - **Languages:** Python, TypeScript, SQL, Swift
+    - **Frameworks & Systems:** React, Next.js, FastAPI, PostgreSQL, PyTorch, MLflow, DataHub, WebMCP, LLM APIs
+    ```
+  - For consulting/strategy tracks, if vertical space is tight, embedded `- **Technologies:** ...` bullets under roles may be used instead.
 - **No Hallucinations**: Employer names, dates, official job titles, and verified metrics must not be altered.
 - **1-Page A4 Budget**: Design line counts to comfortably fit a 1-page A4 PDF under the standard Jake 11pt template (typically ~35–45 total lines of content). Never rely on Vmock to shrink text.
+- If the resume is too long, first condense wording, consolidate technology lists, or remove lower-priority projects. Never solve overflow by reducing a job to one substantive bullet.
+- **Output File Hygiene & Completion**: The output PDF must strictly be named `Morgan_Le_Resume.pdf` (never `Le_Resume.pdf` or whitespace-polluted names). Never leave a session incomplete with only `resume.md`; always compile and validate with `validate_resume.py`.
 
 ### 3. Present the Full Unified Diff & Rationale
 > **CRITICAL REQUIREMENT**: **Always show the complete, full diff**. Never truncate, summarize, or omit sections. The in-chat diff must represent the entire customized document across all sections (Education, Experience, Projects, Skills) so the user can verify all inclusions, exclusions, and modifications at a glance before building.
@@ -64,6 +85,7 @@ In the same first response, show:
     uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "<target-folder>"
     ```
   - Verify the rendered PDF is exactly one A4 page, with active hyperlinks and clean typography.
+  - Treat any validator error reporting fewer than two substantive bullets for a job as a hard failure. Revise with verified content before approval.
 - If the user requests tweaks (e.g. *"Swap bullet 2 for bullet 3 in Shopee"*, *"Add Docker to skills"*):
   - Apply the requested edits directly to `<target-folder>/resume.md`.
   - **Always show the complete updated full diff** against the base (not just a snippet of the modified line).

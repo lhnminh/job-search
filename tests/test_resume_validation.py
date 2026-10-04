@@ -127,6 +127,34 @@ class ResumeValidationTests(unittest.TestCase):
         errors = validate_tailored_completeness(self.source, changed)
         self.assertIn("Missing experience entry: Peloton", errors)
 
+    def test_requires_two_substantive_bullets_for_every_experience_entry(self) -> None:
+        root_source = """\
+# Sample Applicant
+
+## Relevant Experience
+
+### Example Company | Analyst
+*Jan 2025 – Present*
+- Built a verified reporting workflow.
+- Improved a verified operating process.
+- **Technologies:** Python, SQL.
+"""
+        proposed_source = """\
+# Sample Applicant
+
+## Relevant Experience
+
+### Example Company | Analyst
+*Jan 2025 – Present*
+- Built a verified reporting workflow.
+- **Technologies:** Python, SQL.
+"""
+        errors = validate_tailored_completeness(root_source, proposed_source)
+        self.assertIn(
+            "Too few substantive bullets for Example Company: expected at least 2, got 1",
+            errors,
+        )
+
     def test_allows_an_explicitly_excluded_project(self) -> None:
         first_project_start = self.latex_source.index(
             "{\\customcventry{\\href{https://github.com/lhnminh/zephyr-aq}{ZephyrAQ}}"
