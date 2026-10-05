@@ -17,6 +17,7 @@ from resume_validation import (  # noqa: E402
     MASTER_SOURCE_RELATIVE_PATH,
     ResumeValidationError,
     _contact_fields,
+    numeric_claims,
     parse_resume,
     tailored_source_path,
     validate_tailored_completeness,
@@ -92,6 +93,11 @@ class ResumeValidationTests(unittest.TestCase):
             _contact_fields(source),
         )
 
+    def test_generated_jake_header_without_linkedin_preserves_contacts(self) -> None:
+        from md_to_latex import parse_md_resume, render_jake
+        source = "# Sample Applicant\n\n[email@example.com](mailto:email@example.com) | 212-555-0100\n"
+        self.assertEqual(_contact_fields(source), _contact_fields(render_jake(parse_md_resume(source))))
+
     def test_rejects_changed_historical_title(self) -> None:
         changed = self.latex_source.replace(
             "{\\itshape Consultant}{Jan 2025",
@@ -116,6 +122,57 @@ class ResumeValidationTests(unittest.TestCase):
         errors = validate_tailored_tex(self.source, changed)
         self.assertTrue(any("$999M" in error for error in errors))
 
+    def test_commented_entries_and_bullets_are_not_verified(self) -> None:
+        from md_to_latex import parse_md_resume, render_jake
+        active = """# Sample Applicant
+email@example.com | 212-555-0100
+## Experience
+### Active Company | Analyst
+*2024 – Present*
+- Built verified reporting tools.
+"""
+        hidden = """<!--
+- Claimed $999M in savings and 99% growth.
+### Fictional Company | Director
+*2020 – 2023*
+- Unverified example claim.
+-->
+"""
+        root = "<!-- # Fictional Applicant\nfake@example.com | 000-000-0000 -->\n" + active + hidden
+        entries = parse_resume(root)
+        self.assertEqual(["Active Company"], [entry.title for entry in entries])
+        self.assertEqual(1, len(entries[0].bullets))
+        self.assertEqual(_contact_fields(active), _contact_fields(root))
+        proposed = render_jake(parse_md_resume(active))
+        self.assertEqual([], validate_tailored_tex(root, proposed))
+        self.assertEqual([], validate_tailored_completeness(root, proposed))
+        activated = proposed.replace("Built verified reporting tools.", "Claimed \\$999M in savings.")
+        self.assertTrue(any("$999M" in error for error in validate_tailored_tex(root, activated)))
+        fictional = active + hidden.replace("<!--", "").replace("-->", "")
+        errors = validate_tailored_tex(root, render_jake(parse_md_resume(fictional)))
+        self.assertIn("Unverified experience entry: Fictional Company", errors)
+
+    def test_numeric_claims_ignore_comments_without_losing_active_percentages(self) -> None:
+        self.assertEqual({"20%", "$100K"}, numeric_claims(
+            "Grew by 20% and earned $100K. <!-- Claimed 99% and $999M. -->"))
+        self.assertEqual({"20%"}, numeric_claims(
+            r"\begin{document}" + "\nVerified 20\\%. % Hidden $999M\n" + r"\end{document}"))
+        self.assertEqual(set(), numeric_claims("<!-- Unfinished example: $999M"))
+
+    def test_unfinished_master_comment_does_not_hide_confirmed_facts(self) -> None:
+        from md_to_latex import parse_md_resume, render_jake
+        active = """# Sample Applicant
+email@example.com | 212-555-0100
+## Experience
+### Active Company | Analyst
+*2024 – Present*
+- Built verified reporting tools.
+"""
+        root = active + "\n<!-- Unfinished example: $999M"
+        proposed = render_jake(parse_md_resume(active.replace(
+            "Built verified reporting tools.", "Earned $100K through verified reporting tools.")))
+        self.assertEqual([], validate_tailored_tex(root, proposed, ["Earned $100K"]))
+
     def test_requires_every_experience_entry(self) -> None:
         peloton_start = self.latex_source.index(
             "{\\customcventry{\\href{https://www.onepeloton.com/company}{Peloton}}"
@@ -127,7 +184,7 @@ class ResumeValidationTests(unittest.TestCase):
         errors = validate_tailored_completeness(self.source, changed)
         self.assertIn("Missing experience entry: Peloton", errors)
 
-    def test_requires_two_substantive_bullets_for_every_experience_entry(self) -> None:
+    def test_allows_one_substantive_bullet_for_every_experience_entry(self) -> None:
         root_source = """\
 # Sample Applicant
 
@@ -150,9 +207,19 @@ class ResumeValidationTests(unittest.TestCase):
 - **Technologies:** Python, SQL.
 """
         errors = validate_tailored_completeness(root_source, proposed_source)
+        self.assertEqual([], errors)
+        metadata_only = proposed_source.replace("- Built a verified reporting workflow.\n", "")
         self.assertIn(
-            "Too few substantive bullets for Example Company: expected at least 2, got 1",
-            errors,
+            "Too few substantive bullets for Example Company: expected at least 1, got 0",
+            validate_tailored_completeness(root_source, metadata_only),
+        )
+        from md_to_latex import parse_md_resume, render_jake
+        empty_bullet = render_jake(parse_md_resume(proposed_source)).replace(
+            r"\resumeItem{Built a verified reporting workflow.}", r"\resumeItem{}"
+        )
+        self.assertIn(
+            "Too few substantive bullets for Example Company: expected at least 1, got 0",
+            validate_tailored_completeness(root_source, empty_bullet),
         )
 
     def test_allows_an_explicitly_excluded_project(self) -> None:

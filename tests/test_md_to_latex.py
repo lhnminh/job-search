@@ -8,7 +8,7 @@ from pathlib import Path
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT / "scripts"))
 
-from md_to_latex import parse_md_resume, render_jake, render_vmock, render_loc  # noqa: E402
+from md_to_latex import parse_md_resume, render_jake, render_loc  # noqa: E402
 
 
 SAMPLE_MD = """# Sample Applicant
@@ -81,19 +81,49 @@ class MdToLatexTests(unittest.TestCase):
         self.assertIn(r"\textbf{Technologies:} Python, SQL, Looker.", jake_tex)
         self.assertIn(r"\resumeProjectHeading", jake_tex)
 
-    def test_render_vmock(self) -> None:
-        resume = parse_md_resume(SAMPLE_MD)
-        vmock_tex = render_vmock(resume)
-        self.assertIn(r"\documentclass[a4paper,10pt]{article}", vmock_tex)
-        self.assertIn(r"\href{mailto:email@example.com}{\underline{\smash{email@example.com}}}", vmock_tex)
-        self.assertIn(r"\href{https://www.linkedin.com/in/your-profile/}{\underline{\smash{linkedin.com/in/your-profile}}}", vmock_tex)
-        self.assertIn(r"\href{https://example.com/}{\underline{\smash{portfolio.example}}}", vmock_tex)
-        self.assertIn(r"\href{https://www.sea.com/products/shopee}{Shopee}", vmock_tex)
-        self.assertNotIn(r"\href{https://www.sea.com/products/shopee}{\underline{Shopee}}", vmock_tex)
-        self.assertIn(r"{#1\par\vspace{-2pt}}", vmock_tex)
-        self.assertNotIn(r"#1 \vspace{-2pt}", vmock_tex)
-        self.assertIn(r"\$100K", vmock_tex)
-        self.assertIn(r"Top 8\%", vmock_tex)
+    def test_comment_blocks_and_inline_comments_never_render(self) -> None:
+        markdown = """<!-- # Fictional Applicant -->
+# Sample Applicant
+[email@example.com](mailto:email@example.com) | 212-555-0100
+
+## Experience
+### Active Company | Analyst
+*2024 – Present*
+- Improved reporting <!-- with an unverified 99% result -->using Python.
+<!--
+- Claimed $999M in unverified savings.
+### Fictional Company | Director
+*2020 – 2023*
+- Unverified responsibility.
+-->
+
+## Projects
+<!--
+### Hidden Project | Example
+*2026*
+- An unverified project.
+-->
+### Active Project | Example
+*2026*
+- A verified project.
+
+## Technical Skills
+- **Languages:** Python
+<!-- - **Tools:** FictionalTool -->
+<!-- Unfinished comment
+### Another Fictional Company | Director
+- Another hidden claim.
+"""
+        resume = parse_md_resume(markdown)
+        self.assertEqual("Sample Applicant", resume.name)
+        self.assertEqual(["Active Company", "Active Project", "Languages"],
+                         [entry.title for section in resume.sections for entry in section.entries])
+        for renderer in (render_jake, render_loc):
+            with self.subTest(renderer=renderer.__name__):
+                latex = renderer(resume)
+                for hidden in ("Fictional", "Hidden Project", "999M", "99", "Unverified"):
+                    self.assertNotIn(hidden, latex)
+                self.assertIn("Improved reporting using Python.", latex)
 
     def test_render_loc(self) -> None:
         resume = parse_md_resume(SAMPLE_MD)

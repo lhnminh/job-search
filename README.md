@@ -145,6 +145,45 @@ Run the test suite:
 uv run python -m unittest discover -v
 ```
 
+## Build and review in one action
+
+After tailoring the Markdown, prepare the resume with one command:
+
+```bash
+uv run python scripts/prepare_application.py applications/<company-role> \
+  --base pre-made/<track>
+```
+
+To build the resume and cover letter together, add the letter baseline:
+
+```bash
+uv run python scripts/prepare_application.py applications/<company-role> \
+  --base pre-made/<track> \
+  --cover-letter-base pre-made/<track>
+```
+
+For a cover letter alone, supply only `--cover-letter-base`. Baselines must come
+from `pre-made/` or `master/`; the command reads only the selected application.
+New resume claims require explicit user confirmation before supplying a repeated
+`--confirmed-fact` argument.
+
+This action builds with Jake, validates resume content against the master,
+checks each PDF for exactly one A4 page, extractable text, hyperlinks, and PDF
+compatibility, and renders page images for visual review. Both documents must
+pass before it replaces any existing submission outputs. It prints the complete
+Markdown diff with all unchanged context and saves private review copies, diffs,
+images, and a report under `.resume/reviews/<review-id>/`.
+
+Inspect the page images before submitting: automated PDF checks cannot confirm
+that text is unclipped or free of overlap. Cover-letter facts still require
+conversation review; this command checks their PDF and placeholders. Review
+folders are intentionally retained for review and can be deleted afterward.
+Failed attempts remove their temporary build and review files automatically.
+
+The standalone builders also verify PDFs before replacing the previous output.
+Only private browser-workspace previews may contain multiple pages, so page-fit
+review continues to work. Vmock is no longer an available converter option.
+
 ## Optional visual workspace
 
 Start the local Resume Workspace if you prefer reviewing suggestions in a browser:
@@ -154,6 +193,14 @@ Start the local Resume Workspace if you prefer reviewing suggestions in a browse
 ```
 
 Open `http://127.0.0.1:4173`. The server binds to loopback only, stores session data under `.resume/`, and uses the active Codex conversation rather than starting a separate model session.
+
+The browser workspace applies accepted decisions to Markdown and generates the
+same Jake layout used in chat. Exports go to `applications/<company-role>/` and
+include `resume.md`, `_resume.tex`, and `Morgan_Le_Resume.pdf`. Existing cover
+letters in the selected folder are preserved when replacing its resume.
+
+Saved sessions retain their decisions. Older Loc previews must be rebuilt before
+export; previously exported root-level files are left untouched.
 
 ## Public and private files
 
@@ -175,7 +222,8 @@ Previously committed private files remain in Git history until the history is re
 
 - Never invent experience, metrics, technologies, dates, or outcomes.
 - Never change an official historical job title to match a posting.
-- Keep every verified work position represented in tailored resumes.
+- Keep every verified work position represented with at least one substantive bullet; tools lists do not count.
+- Exclude commented-out entries, bullets, skills, and metrics from generated resumes and verified facts.
 - Treat projects as selectable; removing one from an application never removes it from the master resume.
 - Require explicit review before accepting rewritten content.
 - Produce exactly one A4 page for every tailored resume.

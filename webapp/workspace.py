@@ -22,11 +22,8 @@ import sys
 sys.path.insert(0, str(SKILL_SCRIPTS))
 sys.path.insert(0, str(REPOSITORY_ROOT / "scripts"))
 
-from md_to_latex import parse_md_resume, render_loc  # noqa: E402
+from md_to_latex import parse_md_resume, render_jake  # noqa: E402
 from resume_validation import (  # noqa: E402
-    ITEM_RE,
-    ResumeValidationError,
-    _entry_arguments,
     parse_resume,
     tex_to_text,
     validate_tailored_completeness,
@@ -253,21 +250,21 @@ class WorkspaceStore:
 
     def __init__(self, repository: Path = REPOSITORY_ROOT) -> None:
         self.repository = repository.resolve()
-        md_master = self.repository / "master" / "resume.md"
-        tex_master = self.repository / "master" / "_resume.tex"
-        self.master_path = md_master if md_master.is_file() else tex_master
+        self.master_path = self.repository / "master" / "resume.md"
         self.master_pdf_path = self.repository / "master" / "Morgan_Le_Resume.pdf"
         self.sessions_directory = self.repository / ".resume" / "webapp" / "sessions"
         self.archive_directory = self.repository / ".resume" / "webapp" / "archive"
         self.previews_directory = self.repository / ".resume" / "webapp" / "previews"
 
-    def _read_master_source(self) -> str:
+    def _read_master_markdown(self) -> str:
         if not self.master_path.is_file():
-            raise WorkspaceError("The master resume source could not be found.")
+            raise WorkspaceError("The master Markdown resume could not be found.")
         source = self.master_path.read_text(encoding="utf-8")
-        if self.master_path.suffix == ".md":
-            return render_loc(parse_md_resume(source))
-        return source
+        # Commented content is not verified and must never enter a session/export.
+        return re.sub(r"<!--.*?(?:-->|$)", "", source, flags=re.DOTALL)
+
+    def _read_master_source(self) -> str:
+        return render_jake(parse_md_resume(self._read_master_markdown()))
 
     def master(self) -> dict[str, Any]:
         source = self._read_master_source()
@@ -304,6 +301,12 @@ class WorkspaceStore:
             raise WorkspaceError("The tailoring session is unreadable.") from error
         if payload.get("schema_version") != 1:
             raise WorkspaceError("The tailoring session uses an unsupported format.")
+        if payload.get("layout") != "jake":
+            # Keep accepted decisions, but invalidate PDFs produced by the old layout.
+            payload["layout"] = "jake"
+            payload["preview"] = None
+            payload["export"] = None
+            _atomic_json(path, payload)
         return path, payload
 
     def _current_hash(self) -> str:
@@ -336,7 +339,7 @@ class WorkspaceStore:
         base = _validate_slug(requested_slug) if requested_slug else _slugify(f"{company}-{role}")
         session_id = base
         suffix = 2
-        while self._path(session_id).exists() or (self.repository / session_id).exists():
+        while self._path(session_id).exists():
             ending = f"-{suffix}"
             session_id = f"{base[: 80 - len(ending)].rstrip('-')}{ending}"
             suffix += 1
@@ -344,6 +347,7 @@ class WorkspaceStore:
         timestamp = _now()
         payload = {
             "schema_version": 1,
+            "layout": "jake",
             "session_id": session_id,
             "target_slug": session_id,
             "job": {
@@ -374,7 +378,7 @@ class WorkspaceStore:
         sessions = []
         for path in sorted(self.sessions_directory.glob("*.json")):
             try:
-                payload = json.loads(path.read_text(encoding="utf-8"))
+                _, payload = self._load(path.stem)
                 if payload.get("schema_version") != 1:
                     continue
                 counts = _decision_counts(payload)
@@ -393,7 +397,7 @@ class WorkspaceStore:
                         "updated_at": payload["updated_at"],
                     }
                 )
-            except (KeyError, OSError, json.JSONDecodeError):
+            except (KeyError, OSError, json.JSONDecodeError, WorkspaceError):
                 continue
         return sorted(sessions, key=lambda item: item["updated_at"], reverse=True)
 
@@ -895,127 +899,81 @@ class WorkspaceStore:
         return _public_session(payload, current_hash)
 
     @staticmethod
-    def _latex_text(value: str) -> str:
-        replacements = {
-            "\\": r"\textbackslash{}",
-            "&": r"\&",
-            "%": r"\%",
-            "$": r"\$",
-            "#": r"\#",
-            "_": r"\_",
-            "{": r"\{",
-            "}": r"\}",
-            "~": r"\textasciitilde{}",
-            "^": r"\textasciicircum{}",
-        }
-        escaped = "".join(replacements.get(character, character) for character in value)
-        metadata = re.match(r"^(Technologies|Technology|Tools|GPA|Relevant Coursework):\s*(.*)$", value)
-        if metadata:
-            label = metadata.group(1)
-            remainder = "".join(replacements.get(character, character) for character in metadata.group(2))
-            escaped = rf"{{\bfseries {label}:}} {remainder}"
-        return escaped
-
-    @staticmethod
-    def _entry_locations(source: str) -> list[dict[str, Any]]:
+    def _markdown_locations(source: str) -> list[dict[str, Any]]:
         locations = []
-        cursor = 0
-        while True:
-            command_start = source.find("\\customcventry", cursor)
-            if command_start < 0:
-                return locations
-            try:
-                arguments = _entry_arguments(source, command_start)
-            except ResumeValidationError:
-                cursor = command_start + len("\\customcventry")
-                continue
-            content_start, content_end = arguments[3]
-            content = source[content_start:content_end]
-            begin = content.find("\\begin{itemize}")
-            end = content.rfind("\\end{itemize}")
-            bullet_locations = []
-            if begin >= 0 and end > begin:
-                region_start = content_start + begin + len("\\begin{itemize}")
-                region = source[region_start : content_start + end]
-                matches = list(ITEM_RE.finditer(region))
-                for index, match in enumerate(matches):
-                    next_start = matches[index + 1].start() if index + 1 < len(matches) else len(region)
-                    bullet_locations.append(
-                        {
-                            "item_start": region_start + match.start(),
-                            "body_start": region_start + match.end(),
-                            "item_end": region_start + next_start,
-                        }
-                    )
-            locations.append(
-                {
-                    "command_start": command_start,
-                    "command_end": arguments[3][1] + 1,
-                    "bullets": bullet_locations,
-                }
-            )
-            cursor = arguments[3][1] + 1
+        section = ""
+        current = None
+        offset = 0
+        for line in source.splitlines(keepends=True):
+            stripped = line.strip()
+            if stripped.startswith(("## ", "### ")):
+                if current is not None:
+                    current["end"] = offset
+                    current = None
+                if stripped.startswith("## "):
+                    section = stripped[3:]
+                elif "skill" not in section.casefold():
+                    current = {"start": offset, "end": len(source), "bullets": []}
+                    locations.append(current)
+            elif current is not None and stripped.startswith("- "):
+                current["bullets"].append((offset, offset + len(line)))
+            offset += len(line)
+        return locations
 
-    def assemble_source(self, session_id: str, *, require_complete: bool) -> str:
+    def assemble_markdown(self, session_id: str, *, require_complete: bool) -> str:
         _, payload = self._load(session_id)
         self._require_fresh(payload)
-        master_source = self._read_master_source()
-        source = master_source
-        locations = self._entry_locations(source)
+        master_markdown = self._read_master_markdown()
+        locations = self._markdown_locations(master_markdown)
         if len(locations) != len(payload["entries"]):
             raise WorkspaceError("The master resume structure no longer matches the session.")
-        edits: list[tuple[int, int, str]] = []
+        edits = []
         for entry, location in zip(payload["entries"], locations, strict=True):
             if entry["is_project"]:
-                project_decision = entry["project_decision"]
-                if project_decision is None:
-                    if require_complete:
-                        raise WorkspaceError(f"Choose whether to include {entry['title']} before export.")
-                elif project_decision["action"] == "exclude":
-                    edits.append((location["command_start"], location["command_end"], ""))
+                decision = entry["project_decision"]
+                if decision is None and require_complete:
+                    raise WorkspaceError(f"Choose whether to include {entry['title']} before export.")
+                if decision and decision["action"] == "exclude":
+                    edits.append((location["start"], location["end"], ""))
                     continue
-            for bullet, bullet_location in zip(entry["bullets"], location["bullets"], strict=True):
+            if len(entry["bullets"]) != len(location["bullets"]):
+                raise WorkspaceError("The master bullet structure no longer matches the session.")
+            for bullet, (start, end) in zip(entry["bullets"], location["bullets"], strict=True):
                 decision = bullet["decision"]
                 if decision is None:
-                    if require_complete and (
-                        not entry["is_project"]
-                        or (entry.get("project_decision") or {}).get("action") == "include"
-                    ):
-                        raise WorkspaceError(
-                            f"Decide {entry['title']} bullet {bullet['bullet_number']} before export."
-                        )
-                    continue
-                if decision["action"] == "keep":
+                    if require_complete:
+                        raise WorkspaceError(f"Decide {entry['title']} bullet {bullet['bullet_number']} before export.")
                     continue
                 if decision["action"] == "remove":
-                    edits.append((bullet_location["item_start"], bullet_location["item_end"], ""))
-                else:
-                    replacement = " " + self._latex_text(decision["accepted_text"]) + "\n"
-                    edits.append(
-                        (bullet_location["body_start"], bullet_location["item_end"], replacement)
-                    )
+                    edits.append((start, end, ""))
+                elif decision["action"] == "rewrite":
+                    text = decision["accepted_text"]
+                    if "\n" in text or "\r" in text:
+                        raise WorkspaceError("A bullet rewrite must be a single Markdown line.")
+                    metadata = re.match(r"^(Technologies|Technology|Tools|GPA|Relevant Coursework):\s*(.*)$", text)
+                    if metadata:
+                        text = f"**{metadata.group(1)}:** {metadata.group(2)}"
+                    edits.append((start, end, f"- {text}\n"))
+        source = master_markdown
         for start, end, replacement in sorted(edits, reverse=True):
             source = source[:start] + replacement + source[end:]
-        source = re.sub(r"(?m)^[ \t]*\\newpage[ \t]*(?:\n|$)", "", source)
-        project_entries = [entry for entry in payload["entries"] if entry["is_project"]]
-        if project_entries and all(
-            (entry.get("project_decision") or {}).get("action") == "exclude"
-            for entry in project_entries
-        ):
-            source = re.sub(r"(?m)^[ \t]*\\section\{Projects\}[ \t]*(?:\n|$)", "", source)
-        errors = validate_tailored_tex(
-            master_source,
-            source,
-            payload["confirmed_facts"],
-        )
-        errors.extend(
-            validate_tailored_completeness(
-                master_source, source
-            )
-        )
+        # Remove only empty section headings after project/bullet selection.
+        sections = list(re.finditer(r"(?m)^## [^\n]+(?:\n|$)", source))
+        for index in range(len(sections) - 1, -1, -1):
+            match = sections[index]
+            end = sections[index + 1].start() if index + 1 < len(sections) else len(source)
+            if not source[match.end():end].strip():
+                source = source[:match.start()] + source[end:]
+        latex = render_jake(parse_md_resume(source))
+        errors = validate_tailored_tex(master_markdown, latex, payload["confirmed_facts"])
+        errors.extend(validate_tailored_completeness(master_markdown, latex))
         if errors:
             raise WorkspaceError(" ".join(errors))
         return source
+
+    def assemble_source(self, session_id: str, *, require_complete: bool) -> str:
+        markdown = self.assemble_markdown(session_id, require_complete=require_complete)
+        return render_jake(parse_md_resume(markdown))
 
     def _build_at(self, relative_folder: str) -> dict[str, Any]:
         command = [str(self.repository / "scripts" / "build_resume.sh"), relative_folder]
@@ -1105,23 +1063,29 @@ class WorkspaceStore:
             or preview.get("report", {}).get("pages") != 1
         ):
             raise WorkspaceError("Build and review a current one-page preview before export.")
-        target = (self.repository / payload["target_slug"]).resolve()
-        if self.repository not in target.parents or target.parent != self.repository:
-            raise WorkspaceError("The export folder must be directly inside the repository.")
+        markdown = self.assemble_markdown(session_id, require_complete=True)
+        applications = self.repository / "applications"
+        target = (applications / _validate_slug(payload["target_slug"])).resolve()
+        if target.parent != applications:
+            raise WorkspaceError("The export folder must stay directly inside applications/.")
         if target.exists() and any(target.iterdir()) and not overwrite:
             raise WorkspaceError("That tailored folder already exists. Confirm overwrite to continue.")
         unrelated = (
             [
                 item.name
                 for item in target.iterdir()
-                if item.name not in {"_resume.tex", "Morgan_Le_Resume.pdf"}
+                if item.name not in {"resume.md", "_resume.tex", "Morgan_Le_Resume.pdf",
+                                     "cover_letter.md", "_cover_letter.tex", "Morgan_Le_Cover_Letter.pdf",
+                                     "job_description.txt"}
             ]
             if target.exists()
             else []
         )
         if unrelated:
             raise WorkspaceError("The target folder contains unrelated files and cannot be overwritten.")
-        with tempfile.TemporaryDirectory(prefix=".resume-export-", dir=self.repository) as staging_name:
+        export_staging = self.repository / ".resume" / "webapp" / "exports"
+        export_staging.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="export-", dir=export_staging) as staging_name:
             staging = Path(staging_name)
             _atomic_text(staging / "_resume.tex", source)
             report = self._build_at(str(staging.relative_to(self.repository)))
@@ -1131,11 +1095,13 @@ class WorkspaceStore:
                 )
             pdf_bytes = (staging / "Morgan_Le_Resume.pdf").read_bytes()
         target.mkdir(parents=True, exist_ok=True)
+        _atomic_text(target / "resume.md", markdown)
         _atomic_text(target / "_resume.tex", source)
         _atomic_bytes(target / "Morgan_Le_Resume.pdf", pdf_bytes)
         payload["export"] = {
             "report": report,
             "exported_at": _now(),
+            "markdown": str((target / "resume.md").relative_to(self.repository)),
             "source": str((target / "_resume.tex").relative_to(self.repository)),
             "pdf": str((target / "Morgan_Le_Resume.pdf").relative_to(self.repository)),
         }

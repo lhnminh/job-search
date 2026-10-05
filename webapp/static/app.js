@@ -725,7 +725,7 @@ async function exportResume(overwrite = false) {
     if (!overwrite) {
       const counts = state.session.decision_counts;
       const approved = counts.accepted + counts.kept;
-      const confirmed = window.confirm(`Export ${state.session.job.role} at ${state.session.job.company}?\n\n${approved} approved or kept · ${counts.removed} removed\nTarget: ${state.session.target_slug}/Morgan_Le_Resume.pdf`);
+      const confirmed = window.confirm(`Export ${state.session.job.role} at ${state.session.job.company}?\n\n${approved} approved or kept · ${counts.removed} removed\nTarget: applications/${state.session.target_slug}/Morgan_Le_Resume.pdf`);
       if (!confirmed) return;
     }
     const result = await api(`/api/sessions/${state.session.session_id}/export`, {
@@ -738,7 +738,7 @@ async function exportResume(overwrite = false) {
     showToast(`Resume exported to ${result.pdf}.`);
     document.querySelector("#export-note").textContent = `Exported successfully · ${result.report.pages} A4 page`;
   } catch (error) {
-    if (!overwrite && error.message.includes("already exists") && window.confirm(`${error.message}\n\nOverwrite only this tailored resume's source and PDF?`)) {
+    if (!overwrite && error.message.includes("already exists") && window.confirm(`${error.message}\n\nOverwrite only this tailored resume's Markdown, LaTeX, and PDF?`)) {
       return exportResume(true);
     }
     showToast(error.message);

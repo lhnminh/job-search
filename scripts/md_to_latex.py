@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a Markdown resume into compile-ready LaTeX for Jake, Loc, or legacy Vmock (discontinued) templates."""
+"""Convert a Markdown resume into compile-ready LaTeX for Jake or Loc templates."""
 
 from __future__ import annotations
 
@@ -103,6 +103,8 @@ def header_link(url: str, label: str) -> str:
 
 def parse_md_resume(md_content: str) -> MdResume:
     """Parse structured markdown resume into an MdResume object."""
+    # Hidden examples are not verified content, including unfinished comments.
+    md_content = re.sub(r"<!--.*?(?:-->|$)", "", md_content, flags=re.DOTALL)
     lines = md_content.splitlines()
     resume = MdResume()
 
@@ -355,160 +357,6 @@ def render_jake(resume: MdResume) -> str:
     return f"{preamble}\n\n{header}\n\n{body}\n\n\\end{{document}}\n"
 
 
-def render_vmock(resume: MdResume) -> str:
-    """Render resume using the compact 10pt Vmock template (discontinued)."""
-    preamble = r"""\documentclass[a4paper,10pt]{article}
-
-% Force traditional Type 1 fonts for compatibility with legacy resume parsers.
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-
-\usepackage[
-  top=0.55in,
-  bottom=0.5in,
-  left=0.5in,
-  right=0.5in
-]{geometry}
-
-\usepackage{titlesec}
-\usepackage[usenames,dvipsnames]{color}
-\usepackage{enumitem}
-\usepackage[hidelinks]{hyperref}
-\usepackage{fancyhdr}
-\usepackage[english]{babel}
-\usepackage{tabularx}
-
-\pagestyle{fancy}
-\fancyhf{}
-\fancyfoot{}
-\renewcommand{\headrulewidth}{0pt}
-\renewcommand{\footrulewidth}{0pt}
-
-\urlstyle{same}
-\raggedbottom
-\raggedright
-\setlength{\tabcolsep}{0in}
-
-\titleformat{\section}{
-  \vspace{-5pt}\scshape\raggedright\large
-}{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
-
-\newcommand{\resumeItem}[1]{
-  \item\small{{#1\par\vspace{-2pt}}}
-}
-
-\newcommand{\resumeSubheading}[4]{
-  \vspace{-2pt}\item
-    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
-      \small\textbf{#1} & \small #2 \\
-      \textit{\small #3} & \textit{\small #4} \\
-    \end{tabular*}\vspace{-7pt}
-}
-
-\newcommand{\resumeProjectHeading}[2]{
-  \item
-    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
-      \small #1 & \small #2 \\
-    \end{tabular*}\vspace{-7pt}
-}
-
-\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
-\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in,label={}]}
-\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
-\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.22in]}
-\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}"""
-
-    contacts = []
-    if resume.phone:
-        contacts.append(f"\\small {resume.phone}")
-    if resume.email:
-        contacts.append(header_link(f"mailto:{resume.email}", resume.email))
-    if resume.linkedin[0]:
-        url = resume.linkedin[1] or f"https://{resume.linkedin[0]}"
-        contacts.append(header_link(url, resume.linkedin[0]))
-    if resume.github[0]:
-        url = resume.github[1] or f"https://{resume.github[0]}"
-        contacts.append(header_link(url, resume.github[0]))
-    if resume.website[0]:
-        url = resume.website[1] or f"https://{resume.website[0]}"
-        contacts.append(header_link(url, resume.website[0]))
-
-    contact_str = " $|$\n  ".join(contacts)
-
-    header = f"""\\begin{{document}}
-
-\\begin{{center}}
-  \\textbf{{\\Huge \\scshape {resume.name}}} \\\\ \\vspace{{2pt}}
-  {contact_str}
-\\end{{center}}"""
-
-    sections_tex = []
-    for section in resume.sections:
-        sec_title = section.name
-        is_project = "project" in sec_title.casefold()
-        is_skills = "skill" in sec_title.casefold()
-
-        if is_skills:
-            items = []
-            for entry in section.entries:
-                cat = md_inline_to_latex(entry.title.rstrip(":"))
-                skills_list = ", ".join(
-                    md_inline_to_latex(b.text) for b in entry.bullets
-                ) if entry.bullets else md_inline_to_latex(entry.subtitle)
-                if cat:
-                    items.append(f"\\textbf{{{cat}}}{{: {skills_list}}}")
-                else:
-                    items.append(skills_list)
-            items_str = " \\\\\n     ".join(items)
-            sec_out = [
-                f"\\section{{{md_inline_to_latex(sec_title)}}}",
-                " \\begin{itemize}[leftmargin=0.15in, label={}]",
-                "    \\small{\\item{",
-                f"     {items_str}",
-                "    }}",
-                " \\end{itemize}",
-            ]
-            sections_tex.append("\n".join(sec_out))
-            continue
-
-        sec_out = [f"\\section{{{md_inline_to_latex(sec_title)}}}", "\\resumeSubHeadingListStart"]
-        for entry in section.entries:
-            title_tex = md_inline_to_latex(entry.title)
-            date_tex = md_inline_to_latex(normalize_date(entry.date, dash=" -- "))
-            sub_tex = md_inline_to_latex(entry.subtitle)
-
-            if is_project:
-                heading = f"\\textbf{{{title_tex}}}"
-                if sub_tex:
-                    heading += f" $|$ \\emph{{{sub_tex}}}"
-                sec_out.extend([
-                    "  \\resumeProjectHeading",
-                    f"    {{{heading}}}{{{date_tex}}}",
-                ])
-            else:
-                loc_tex = md_inline_to_latex(entry.location)
-                sec_out.extend([
-                    "  \\resumeSubheading",
-                    f"    {{{title_tex}}}{{{date_tex}}}",
-                    f"    {{{sub_tex}}}{{{loc_tex}}}",
-                ])
-
-            if entry.bullets:
-                sec_out.append("    \\resumeItemListStart")
-                for bullet in entry.bullets:
-                    b_tex = md_inline_to_latex(bullet.text)
-                    if bullet.is_metadata and not b_tex.endswith("."):
-                        b_tex += "."
-                    sec_out.append(f"      \\resumeItem{{{b_tex}}}")
-                sec_out.append("    \\resumeItemListEnd")
-
-        sec_out.append("\\resumeSubHeadingListEnd")
-        sections_tex.append("\n".join(sec_out))
-
-    body = "\n\n".join(sections_tex)
-    return f"{preamble}\n\n{header}\n\n{body}\n\n\\end{{document}}\n"
-
-
 def render_loc(resume: MdResume) -> str:
     """Render resume using the classic moderncv Loc template."""
     preamble = r"""\documentclass[11pt,a4paper,sans]{moderncv}
@@ -604,7 +452,6 @@ def render_loc(resume: MdResume) -> str:
 
 RENDERERS = {
     "jake": render_jake,
-    "vmock": render_vmock,
     "loc": render_loc,
 }
 
@@ -613,7 +460,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input_pos", nargs="?", type=Path, help="Path to markdown resume (positional)")
     parser.add_argument("-i", "--input", type=Path, help="Path to markdown resume (flag)")
-    parser.add_argument("-t", "--template", choices=["jake", "vmock", "loc"], default="jake", help="Target template ('vmock' is discontinued; agents must use 'jake')")
+    parser.add_argument("-t", "--template", choices=["jake", "loc"], default="jake", help="Target template (default: jake)")
     parser.add_argument("-o", "--output", type=Path, help="Output .tex path")
     parser.add_argument("-b", "--build", action="store_true", help="Build PDF using build_resume.sh")
     args = parser.parse_args()
@@ -622,9 +469,6 @@ def main() -> int:
     if not input_file.is_file():
         print(f"Error: Input file {input_file} does not exist.", file=sys.stderr)
         return 1
-
-    if args.template.lower() == "vmock":
-        print("Warning: The 'vmock' template is discontinued. Agents must use 'jake' instead.", file=sys.stderr)
 
     content = input_file.read_text(encoding="utf-8")
     resume = parse_md_resume(content)

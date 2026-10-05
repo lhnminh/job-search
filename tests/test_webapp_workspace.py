@@ -97,6 +97,98 @@ class WorkspaceStoreTests(unittest.TestCase):
         self.assertGreater(master["entry_count"], 0)
         self.assertTrue(any(entry["title"] == "Columbia University" for entry in master["entries"]))
 
+    def _resolve_without_projects(self) -> dict:
+        session = self._save_analysis()
+        return self.store.apply_decisions(
+            session["session_id"],
+            bullet_decisions=[
+                {"entry_number": entry["entry_number"], "bullet_number": bullet["bullet_number"], "action": "keep"}
+                for entry in session["entries"] if not entry["is_project"]
+                for bullet in entry["bullets"]
+            ],
+            project_decisions=[
+                {"entry_number": entry["entry_number"], "action": "exclude"}
+                for entry in session["entries"] if entry["is_project"]
+            ],
+        )
+
+    def test_markdown_and_jake_source_apply_identical_decisions(self) -> None:
+        with self.store.master_path.open("a") as master:
+            master.write("\n## Technical Skills\n- **Languages:** Python, SQL\n")
+        self.session = self.store.reconcile_session(self.session["session_id"])
+        session = self._resolve_without_projects()
+        first = session["entries"][0]
+        bullet = first["bullets"][0]
+        self.store.apply_decisions(session["session_id"], bullet_decisions=[{
+            "entry_number": first["entry_number"], "bullet_number": 1,
+            "action": "rewrite", "accepted_text": bullet["source_text"],
+        }])
+        markdown = self.store.assemble_markdown(session["session_id"], require_complete=True)
+        source = self.store.assemble_source(session["session_id"], require_complete=True)
+        from md_to_latex import parse_md_resume, render_jake
+        self.assertEqual(render_jake(parse_md_resume(markdown)), source)
+        self.assertIn(r"\documentclass[a4paper,11pt]{article}", source)
+        self.assertNotIn(r"\customcventry", source)
+        self.assertNotIn("## Projects", markdown)
+        master = self.store._read_master_markdown()
+        self.assertEqual(master.split("## ", 1)[0], markdown.split("## ", 1)[0])
+        self.assertIn("## Technical Skills", markdown)
+
+    def test_legacy_session_keeps_decisions_but_invalidates_loc_preview(self) -> None:
+        session = self._resolve_without_projects()
+        path, payload = self.store._load(session["session_id"])
+        history = payload["history"]
+        from md_to_latex import parse_md_resume, render_loc
+        from workspace import _entry_records
+        legacy_entries = _entry_records(render_loc(parse_md_resume(self.store._read_master_markdown())))
+        for legacy, current in zip(legacy_entries, payload["entries"], strict=True):
+            legacy["project_decision"] = current["project_decision"]
+            for old_bullet, new_bullet in zip(legacy["bullets"], current["bullets"], strict=True):
+                old_bullet["decision"] = new_bullet["decision"]
+        payload["entries"] = legacy_entries
+        payload.pop("layout")
+        payload["preview"] = {"report": {"pages": 1}}
+        payload["export"] = {"pdf": "old-root/Morgan_Le_Resume.pdf"}
+        from workspace import _atomic_json
+        _atomic_json(path, payload)
+        migrated = self.store.get_session(session["session_id"])
+        self.assertEqual("jake", migrated["layout"])
+        self.assertIsNone(migrated["preview"])
+        self.assertIsNone(migrated["export"])
+        self.assertEqual(history, migrated["history"])
+        self.assertEqual("keep", migrated["entries"][0]["bullets"][0]["decision"]["action"])
+        self.assertIn(r"\documentclass[a4paper,11pt]{article}",
+                      self.store.assemble_source(session["session_id"], require_complete=True))
+
+    def test_export_includes_markdown_and_preserves_cover_letter(self) -> None:
+        session = self._resolve_without_projects()
+        source = self.store.assemble_source(session["session_id"], require_complete=True)
+        path, payload = self.store._load(session["session_id"])
+        payload["preview"] = {"report": {"pages": 1},
+                              "source_sha256": hashlib.sha256(source.encode()).hexdigest()}
+        from workspace import _atomic_json
+        _atomic_json(path, payload)
+        target = self.repository / "applications" / session["target_slug"]
+        target.mkdir(parents=True)
+        (target / "cover_letter.md").write_text("existing letter")
+        def build(relative_folder: str) -> dict:
+            (self.repository / relative_folder / "Morgan_Le_Resume.pdf").write_bytes(b"fixture")
+            return {"pages": 1, "a4": True, "links": 1, "extracted_characters": [100]}
+        self.store._build_at = build
+        exported = self.store.export(session["session_id"], overwrite=True)
+        self.assertEqual(f"applications/{session['target_slug']}/resume.md", exported["markdown"])
+        self.assertEqual("existing letter", (target / "cover_letter.md").read_text())
+        self.assertEqual(source, (target / "_resume.tex").read_text())
+        self.assertEqual(self.store.assemble_markdown(session["session_id"], require_complete=True),
+                         (target / "resume.md").read_text())
+        self.assertFalse((self.repository / session["target_slug"]).exists())
+
+    def test_commented_content_does_not_enter_workspace_or_exports(self) -> None:
+        with self.store.master_path.open("a") as master:
+            master.write("\n<!--\n### Fictional Employer | Fictional Role\n*2020*\n- Unverified claim.\n-->\n")
+        self.assertNotIn("Fictional Employer", self.store._read_master_source())
+        self.assertNotIn("Unverified claim", self.store._read_master_markdown())
+
     def test_complete_analysis_is_required(self) -> None:
         requirements, bullets, projects = self._analysis()
         with self.assertRaisesRegex(WorkspaceError, "missing"):
@@ -344,8 +436,8 @@ class WorkspaceStoreTests(unittest.TestCase):
             "source_sha256": hashlib.sha256(source.encode("utf-8")).hexdigest(),
         }
         _atomic_json(path, payload)
-        target = self.repository / session["target_slug"]
-        target.mkdir()
+        target = self.repository / "applications" / session["target_slug"]
+        target.mkdir(parents=True)
         old_source = "existing source"
         old_pdf = b"existing pdf"
         (target / "_resume.tex").write_text(old_source, encoding="utf-8")
@@ -357,6 +449,7 @@ class WorkspaceStoreTests(unittest.TestCase):
         self.store._build_at = fail_build  # type: ignore[method-assign]
         with self.assertRaisesRegex(WorkspaceError, "simulated final build failure"):
             self.store.export(session["session_id"], overwrite=True)
+        self.assertFalse((target / "resume.md").exists())
         self.assertEqual(old_source, (target / "_resume.tex").read_text(encoding="utf-8"))
         self.assertEqual(old_pdf, (target / "Morgan_Le_Resume.pdf").read_bytes())
 
@@ -393,6 +486,12 @@ class WorkspaceStoreTests(unittest.TestCase):
             REPOSITORY_ROOT / "scripts" / "normalize_pdf.py",
             self.repository / "scripts" / "normalize_pdf.py",
         )
+        shutil.copy2(REPOSITORY_ROOT / "scripts/verify_submission_pdf.py",
+                     self.repository / "scripts/verify_submission_pdf.py")
+        validators = self.repository / ".agents/skills/tailor-resume/scripts"
+        validators.mkdir(parents=True)
+        shutil.copy2(REPOSITORY_ROOT / ".agents/skills/tailor-resume/scripts/resume_validation.py",
+                     validators / "resume_validation.py")
         shutil.copytree(REPOSITORY_ROOT / "shared", self.repository / "shared")
         session = self._save_analysis()
         decisions = [
@@ -421,9 +520,13 @@ class WorkspaceStoreTests(unittest.TestCase):
 
         exported = self.store.export(session["session_id"])
         self.assertEqual(1, exported["report"]["pages"])
-        target = self.repository / session["target_slug"]
+        markdown = (self.repository / exported["markdown"]).read_text()
+        source = (self.repository / exported["source"]).read_text()
+        from md_to_latex import parse_md_resume, render_jake
+        self.assertEqual(render_jake(parse_md_resume(markdown)), source)
+        target = self.repository / "applications" / session["target_slug"]
         self.assertEqual(
-            {"_resume.tex", "Morgan_Le_Resume.pdf"},
+            {"resume.md", "_resume.tex", "Morgan_Le_Resume.pdf"},
             {item.name for item in target.iterdir()},
         )
 

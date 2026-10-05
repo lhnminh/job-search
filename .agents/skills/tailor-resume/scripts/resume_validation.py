@@ -22,7 +22,7 @@ CLAIM_RE = re.compile(
 MASTER_SOURCE_RELATIVE_PATH = Path("master") / "resume.md"
 PDF_COMPATIBILITY_HEADER = "%PDF-1.5"
 PRESENTATION_LIGATURES = frozenset("\ufb00\ufb01\ufb02\ufb03\ufb04\ufb05\ufb06")
-MINIMUM_EXPERIENCE_BULLETS = 2
+MINIMUM_EXPERIENCE_BULLETS = 1
 
 
 class ResumeValidationError(ValueError):
@@ -110,6 +110,11 @@ def _command_arguments(
         start, end, cursor = _balanced_group(source, cursor)
         arguments.append((start, end))
     return arguments, cursor
+
+
+def _strip_markdown_comments(source: str) -> str:
+    """Exclude hidden examples, including an unfinished trailing comment."""
+    return re.sub(r"<!--.*?(?:-->|$)", "", source, flags=re.DOTALL)
 
 
 def _strip_comments(source: str) -> str:
@@ -307,6 +312,7 @@ def _parse_markdown_resume(source: str) -> list[Entry]:
 
 
 def parse_resume(source: str) -> list[Entry]:
+    source = _strip_markdown_comments(source)
     if "# " in source and "\\begin{document}" not in source and "\\documentclass" not in source:
         entries = _parse_markdown_resume(source)
         if entries:
@@ -345,6 +351,7 @@ def _canonical_date(value: str) -> str:
 
 
 def _contact_fields_markdown(source: str) -> dict[str, tuple[str, ...]]:
+    source = _strip_markdown_comments(source)
     fields: dict[str, tuple[str, ...]] = {}
     for line in source.splitlines():
         stripped = line.strip()
@@ -376,6 +383,7 @@ def _contact_fields_markdown(source: str) -> dict[str, tuple[str, ...]]:
 
 
 def _contact_fields(source: str) -> dict[str, tuple[str, ...]]:
+    source = _strip_markdown_comments(source)
     if "\\begin{document}" not in source and "\\documentclass" not in source:
         return _contact_fields_markdown(source)
     active = _strip_comments(source)
@@ -421,7 +429,7 @@ def _contact_fields(source: str) -> dict[str, tuple[str, ...]]:
                     fields["github"] = (url, label)
                 else:
                     fields["website"] = (url, label)
-            if all(key in fields for key in ("email", "linkedin")):
+            if "email" in fields:
                 return fields
 
     fields: dict[str, tuple[str, ...]] = {}
@@ -445,6 +453,9 @@ def _contact_fields(source: str) -> dict[str, tuple[str, ...]]:
 
 
 def numeric_claims(source: str) -> set[str]:
+    source = _strip_markdown_comments(source)
+    if "\\begin{document}" in source or "\\documentclass" in source:
+        source = _strip_comments(source)
     body = source.partition("\\begin{document}")[2] or source
     return {re.sub(r"[\\\s]", "", match.group(0)).upper() for match in CLAIM_RE.finditer(body)}
 
@@ -502,7 +513,7 @@ def validate_tailored_tex(
         if root_contacts.get("website") or proposed_contacts.get("website"):
             errors.append(f"Contact field changed or is missing: website")
 
-    verified_claims = numeric_claims(root_source + "\n" + "\n".join(confirmed_facts))
+    verified_claims = numeric_claims(root_source) | numeric_claims("\n".join(confirmed_facts))
     extra_claims = numeric_claims(proposed_source) - verified_claims
     if extra_claims:
         errors.append("Unverified numeric claims: " + ", ".join(sorted(extra_claims)))
@@ -525,7 +536,10 @@ def validate_tailored_completeness(root_source: str, proposed_source: str) -> li
     for proposed_entry in proposed_entries:
         if "experience" not in proposed_entry.section.casefold():
             continue
-        proposed_substantive = sum(not bullet.is_metadata for bullet in proposed_entry.bullets)
+        proposed_substantive = sum(
+            not bullet.is_metadata and bool(tex_to_text(bullet.text).strip())
+            for bullet in proposed_entry.bullets
+        )
         if proposed_substantive < MINIMUM_EXPERIENCE_BULLETS:
             errors.append(
                 f"Too few substantive bullets for {proposed_entry.title}: "

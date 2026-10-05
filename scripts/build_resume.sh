@@ -86,5 +86,13 @@ RAW_PDF="$BUILD_DIR/${SOURCE_NAME%.tex}.pdf"
 NORMALIZED_PDF="$BUILD_DIR/$OUTPUT_NAME"
 "$PYTHON_BIN" "$NORMALIZER" "$RAW_PDF" "$NORMALIZED_PDF"
 
+# Verify before replacing the previous PDF. Only private workspace previews
+# may contain multiple pages so users can review page-fitting choices.
+case "$SOURCE_DIR" in
+  "$REPO_ROOT/.resume/webapp/previews/"*)
+    "$PYTHON_BIN" "$REPO_ROOT/scripts/verify_submission_pdf.py" "$NORMALIZED_PDF" --allow-multiple-pages ;;
+  *) "$PYTHON_BIN" "$REPO_ROOT/scripts/verify_submission_pdf.py" "$NORMALIZED_PDF" ;;
+esac
+
 cp "$NORMALIZED_PDF" "$OUTPUT_PATH"
 echo "Created $OUTPUT_PATH"

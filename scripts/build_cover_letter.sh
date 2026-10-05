@@ -88,20 +88,8 @@ RAW_PDF="$BUILD_DIR/${SOURCE_NAME%.tex}.pdf"
 NORMALIZED_PDF="$BUILD_DIR/$OUTPUT_NAME"
 "$PYTHON_BIN" "$NORMALIZER" "$RAW_PDF" "$NORMALIZED_PDF"
 
-# Verify 1-page compliance
-PAGE_COUNT=$("$PYTHON_BIN" -c "
-import sys
-try:
-    from pypdf import PdfReader
-    reader = PdfReader('$NORMALIZED_PDF')
-    print(len(reader.pages))
-except Exception:
-    print(1)
-")
-
-if [[ "$PAGE_COUNT" -ne 1 ]]; then
-  echo "WARNING: Cover letter built with $PAGE_COUNT pages! Target is exactly 1 page." >&2
-fi
+# Verify one-page A4 compliance before replacing the previous PDF.
+"$PYTHON_BIN" "$REPO_ROOT/scripts/verify_submission_pdf.py" "$NORMALIZED_PDF"
 
 cp "$NORMALIZED_PDF" "$OUTPUT_PATH"
-echo "Created $OUTPUT_PATH ($PAGE_COUNT page(s))"
+echo "Created $OUTPUT_PATH"
