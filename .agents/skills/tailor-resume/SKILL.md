@@ -13,6 +13,7 @@ Use the active assistant conversation. Read `AGENTS.md` and, when present, the g
 - Select an available `pre-made/<track>/resume.md` baseline when useful; otherwise use the master. Never invent a baseline or browse `applications/` for references.
 - Create the new tailored Markdown in `applications/<company-role>/resume.md`. Read an existing application only when the user explicitly selects it for updates.
 - Preserve employers, official titles, dates, contact details, and verified outcomes. Keep every work position with at least one substantive bullet; prefer more coverage for relevant roles. A technologies line is not substantive coverage.
+- Prioritize verified cross-functional collaboration, team leadership, and quantified revenue or business impact when allocating resume space. Trim additional projects and secondary technical details before removing these proof points; keep substantive coverage for every work position.
 - Select projects and coursework from the actual applicant's verified inventory. Never assume the public example's employers, education, projects, skills, or metrics belong to the applicant.
 - Follow the applicant's baseline and local layout preferences. Default to Jake, exactly one A4 page. Condense repetition before reducing substantive experience; Vmock is unavailable.
 - Tailored edits do not change the master. Append accepted facts to the master only on an explicit source-of-truth request; never replace or delete master content automatically.

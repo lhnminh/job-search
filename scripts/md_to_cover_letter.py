@@ -263,6 +263,14 @@ def render_latex_cover_letter(letter: CoverLetter) -> str:
 % Fix LaTeX letter.cls rubber vertical centering so header position is locked to Domino reference
 \makeatletter
 \def\@texttop{}
+% Keep the date and company in one block, followed by two blank lines.
+\renewcommand{\opening}[1]{%
+  \thispagestyle{empty}%
+  \noindent\@date\\{}%
+  \toname\ifx\toaddress\@empty\else\\{}\toaddress\fi\par
+  \vspace{\dimexpr\parskip+\baselineskip\relax}%
+  \noindent#1\par\nobreak
+}
 \makeatother
 
 % Margin controls inherited from the repository cover-letter template.

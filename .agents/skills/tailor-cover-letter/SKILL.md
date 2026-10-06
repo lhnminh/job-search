@@ -13,6 +13,8 @@ Read active, uncommented `master/resume.md` and the complete job description. Us
 
 Derive the applicant name, contacts, education, employers, projects, achievements, and signature from their own master. The public sample is an example, not the applicant's identity. No project, university, award, or metric is universally mandatory. Apply any explicit personal preferences only when the underlying facts are verified.
 
+Prioritize verified cross-functional collaboration, team leadership, and quantified revenue or business impact when selecting proof points. Use projects as supporting evidence while preserving approved-baseline edit limits and explicit applicant preferences.
+
 ## Preserve an approved baseline
 
 Treat a selected baseline's voice, sentence order, paragraphs, and proof points as approved copy. Substitute the date, target role, company, team, and salutation. Outside those substitutions, change at most two existing body sentences and add at most one new sentence unless the user explicitly authorizes broader changes. Prefer narrow edits; explain and request approval before exceeding that scope.
@@ -29,6 +31,8 @@ Use four connected paragraphs unless the user or baseline specifies otherwise:
 4. Specific company alignment and a concise interview invitation.
 
 Preserve a user-approved opening when provided; otherwise write an opening appropriate to the actual applicant. Copy the contact header from the private master and sign with the applicant's own name. Include the current date and company/team, with no applicant or company address lines. Replace every target placeholder before building.
+
+Place the date and company on consecutive lines with no blank line between them, then leave two blank lines before the salutation. Verify this spacing in the rendered PDF.
 
 ## Build and review
 

@@ -3,8 +3,8 @@
 [email@example.com](mailto:email@example.com) | 212-555-0100 | [portfolio.example](https://example.com/) | [linkedin.com/in/your-profile](https://www.linkedin.com/in/your-profile/)
 
 [Date]
-
 [Company Name]
+
 
 Dear [Company Name] Hiring Team,
 
