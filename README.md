@@ -1,6 +1,6 @@
 # Agentic Resume Customization
 
-A local-first system for turning one comprehensive resume into focused, job-specific applications with Codex.
+A local-first system for turning one comprehensive resume into focused, job-specific applications with your choice of AI assistant.
 
 Bring your own resume, add any reusable content or layout templates you prefer, and give the agent a job description. The workflow selects relevant experience, proposes targeted wording, shows the complete diff for review, and builds a verified one-page A4 PDF without inventing facts.
 
@@ -10,7 +10,7 @@ Bring your own resume, add any reusable content or layout templates you prefer, 
 
 - Uses your private master resume as the source of truth.
 - Reuses optional track-specific baselines for engineering, data science, finance, consulting, or other roles.
-- Reviews every proposed change with you in the active Codex conversation.
+- Reviews every proposed change with you in the active assistant conversation.
 - Preserves verified employers, titles, dates, metrics, and responsibilities.
 - Builds ATS-readable PDFs with working hyperlinks.
 - Keeps private resumes, applications, and cover letters out of Git.
@@ -30,7 +30,7 @@ uv sync
 
 Requirements:
 
-- [Codex](https://openai.com/codex/) with repository-local skill support
+- An assistant that can read repository files and run commands, or a chat assistant with manual Markdown handoff. No particular provider, model, or repository skill loader is required.
 - Python 3.12 and [uv](https://docs.astral.sh/uv/)
 - [Tectonic](https://tectonic-typesetting.github.io/) for PDF builds
 - [Poppler](https://poppler.freedesktop.org/) for visual PDF checks
@@ -40,11 +40,15 @@ Requirements:
 Create the private workspace and add your comprehensive resume:
 
 ```bash
-mkdir -p master pre-made applications
-cp public/resume.md master/resume.md
+uv run python scripts/init_workspace.py --resume /path/to/your/resume.md
+uv run python scripts/doctor.py
 ```
 
-Replace the example content in `master/resume.md` with your own verified experience. This file is your private source of truth and is ignored by Git.
+This copies your Markdown into `master/resume.md` without overwriting existing content. It is private and ignored by Git. To try the public sample instead, run `uv run python scripts/init_workspace.py --example`; sample facts are for demonstration only.
+
+On Linux, install uv using its [official instructions](https://docs.astral.sh/uv/getting-started/installation/), install [Tectonic](https://tectonic-typesetting.github.io/en-US/install.html), and install Poppler (`poppler-utils` on Debian/Ubuntu). Run `uv sync` afterward. The builders require Bash: use a Linux environment such as WSL on Windows. Native Windows shell builds are not supported. Tectonic may download its TeX resources on the first build.
+
+`doctor.py` reports missing prerequisites without installing anything. Run the tests on a fresh clone with `uv run python -m unittest discover -v`; they use fictional fixtures and require no private resume.
 
 The expected Markdown structure is simple:
 
@@ -78,10 +82,11 @@ Formatting templates live in `templates/`. Add or adapt a layout there if you wa
 
 ### 4. Tailor for a job
 
-Open the repository in Codex and ask:
+Open the repository in your preferred assistant and ask:
 
 ```text
-Use $tailor-resume to tailor my resume for this job description:
+Read AGENTS.md and .agents/skills/tailor-resume/SKILL.md.
+Tailor my resume for this job description:
 
 <paste the complete job description>
 ```
@@ -91,11 +96,11 @@ The agent will:
 1. Read the job description and your private resume.
 2. Select the closest optional baseline, when available.
 3. Propose targeted bullets and project choices using verified facts only.
-4. Show the complete Markdown diff for approval.
-5. Save the approved version under `applications/<company-role>/`.
-6. Build and validate an ATS-readable, one-page A4 PDF.
+4. Save the tailored Markdown under `applications/<company-role>/`.
+5. Immediately build, validate, and visually inspect an ATS-readable, one-page A4 PDF.
+6. Show the verified PDF alongside the complete Markdown diff for review, without waiting for separate build approval.
 
-For a cover letter, use the same flow with `$tailor-cover-letter`.
+For a cover letter, load `.agents/skills/tailor-cover-letter/SKILL.md` in the same way. Codex users may still invoke `$tailor-resume` or `$tailor-cover-letter`; automatic skill discovery is optional. Requested tweaks trigger an immediate rebuild and verification, followed by the updated PDF and complete diff. An explicit request for Markdown only or to defer building takes precedence.
 
 ## Output
 
@@ -105,10 +110,10 @@ Each private application is self-contained:
 applications/<company-role>/
   resume.md
   _resume.tex
-  Morgan_Le_Resume.pdf
+  Resume.pdf
   cover_letter.md                 # optional
   _cover_letter.tex               # optional
-  Morgan_Le_Cover_Letter.pdf      # optional
+  Cover_Letter.pdf      # optional
 ```
 
 `applications/` is ignored by Git, so generated application materials remain local.
@@ -143,6 +148,8 @@ Run the test suite:
 
 ```bash
 uv run python -m unittest discover -v
+# Include real PDF build checks when Tectonic and Poppler are installed:
+RESUME_PDF_INTEGRATION=1 uv run python -m unittest discover -v
 ```
 
 ## Build and review in one action
@@ -181,26 +188,21 @@ folders are intentionally retained for review and can be deleted afterward.
 Failed attempts remove their temporary build and review files automatically.
 
 The standalone builders also verify PDFs before replacing the previous output.
-Only private browser-workspace previews may contain multiple pages, so page-fit
-review continues to work. Vmock is no longer an available converter option.
+Vmock is no longer an available converter option.
 
-## Optional visual workspace
+See [the portable chat workflow guide](docs/PORTABLE_WORKFLOW.md) for assistants
+with repository access and manual Markdown handoff. All tailoring and review
+happen in the active chat; there is no local web application to run.
 
-Start the local Resume Workspace if you prefer reviewing suggestions in a browser:
+## Personal preferences
 
-```bash
-./scripts/run_resume_app.sh
+Default output names are `Resume.pdf` and `Cover_Letter.pdf`. Optional gitignored `.resume/settings.json` may contain:
+
+```json
+{"resume_pdf": "Your_Name_Resume.pdf", "cover_letter_pdf": "Your_Name_Cover_Letter.pdf"}
 ```
 
-Open `http://127.0.0.1:4173`. The server binds to loopback only, stores session data under `.resume/`, and uses the active Codex conversation rather than starting a separate model session.
-
-The browser workspace applies accepted decisions to Markdown and generates the
-same Jake layout used in chat. Exports go to `applications/<company-role>/` and
-include `resume.md`, `_resume.tex`, and `Morgan_Le_Resume.pdf`. Existing cover
-letters in the selected folder are preserved when replacing its resume.
-
-Saved sessions retain their decisions. Older Loc previews must be rebuilt before
-export; previously exported root-level files are left untouched.
+Put applicant-specific writing and layout preferences in `.resume/preferences.md`. Assistants read this optional file alongside the shared rules; they must confirm facts against the master. New clones do not inherit another applicant's private preferences.
 
 ## Public and private files
 
@@ -210,7 +212,7 @@ Only the approved example resume and reusable system code belong in the public r
 | --- | --- | --- |
 | `public/` | Approved public resume and PDF | Yes |
 | `templates/` | Generic formatting templates | Yes |
-| `.agents/skills/`, `scripts/`, `webapp/` | Agentic workflow and tooling | Yes |
+| `.agents/skills/`, `scripts/` | Agentic workflow and tooling | Yes |
 | `master/` | Comprehensive personal resume | No |
 | `pre-made/` | Personal reusable baselines | No |
 | `applications/` | Tailored resumes and cover letters | No |

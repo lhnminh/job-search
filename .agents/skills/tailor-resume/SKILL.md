@@ -1,117 +1,38 @@
 ---
 name: tailor-resume
-description: Tailor, review, and build application-specific resumes in this repository through a conversational Codex workflow. Use when the user provides a job description, asks for a targeted resume, wants to review resume content section by section or job by job, points to numbered bullets for rewriting, or asks to build and verify a tailored one-page PDF.
+description: Tailor, review, and build a verified one-page resume for a supplied job description, or review resume entries and numbered bullets in this repository.
 ---
 
 # Tailor Resume
 
-Work directly in the current Codex or Antigravity conversation. Follow `AGENTS.md`; do not create another chat or call another model.
+Use the active assistant conversation. Read `AGENTS.md` and, when present, the gitignored `.resume/preferences.md`. Do not require a particular model, provider, skill loader, or another model session. Instructions can be loaded by path when automatic skill discovery is unavailable.
 
-> **CRITICAL RULE**: Do NOT inspect, read, list, grep, or search the `applications/` directory. Resumes in `applications/` are ephemeral and periodically deleted by the user; browsing them is a waste of time. All tailoring references come exclusively from `pre-made/` (for track baselines) and `master/resume.md` (for verified facts, projects, and skills). `applications/` is strictly a write destination.
->
-> **DISCONTINUED TEMPLATE RULE**: Never use or propose the Vmock template (`--template vmock` / `templates/Vmock/`). It is discontinued. Resumes must always be compiled using the standard Jake template (`--template jake`). If content overflows, shorten bullet points and trim wording.
->
-> **EXPERIENCE COVERAGE RULE**: Every listed job must have at least one substantive accomplishment or responsibility bullet. Prefer two or more when relevant verified material and page space permit; a single bullet is acceptable when needed. A technologies/tools line does not count toward the minimum. Never invent a bullet to satisfy this rule; if `master/resume.md` has no substantive verified material for a job, ask the user for a verified fact. Do not present a resume as ready while any job has no substantive bullet.
+## Sources and decisions
 
-## Primary Mode: Fast 1-Turn Batch Proposal & Diff Review
+- Verified facts come only from active, uncommented `master/resume.md` content and explicit user confirmations. Read the complete job description and master before starting.
+- Select an available `pre-made/<track>/resume.md` baseline when useful; otherwise use the master. Never invent a baseline or browse `applications/` for references.
+- Create the new tailored Markdown in `applications/<company-role>/resume.md`. Read an existing application only when the user explicitly selects it for updates.
+- Preserve employers, official titles, dates, contact details, and verified outcomes. Keep every work position with at least one substantive bullet; prefer more coverage for relevant roles. A technologies line is not substantive coverage.
+- Select projects and coursework from the actual applicant's verified inventory. Never assume the public example's employers, education, projects, skills, or metrics belong to the applicant.
+- Follow the applicant's baseline and local layout preferences. Default to Jake, exactly one A4 page. Condense repetition before reducing substantive experience; Vmock is unavailable.
+- Tailored edits do not change the master. Append accepted facts to the master only on an explicit source-of-truth request; never replace or delete master content automatically.
 
-When a user provides a job description (JD) and requests a targeted resume:
+## Default: tailor, build, and review
 
-### 1. Select the Base Track & Target Path
-Identify the best starting base from `pre-made/`:
-- `pre-made/finance-consulting` (Consulting, Corporate Strategy, BizOps, Finance)
-- `pre-made/forward-deployed-engineer` (Forward Deployed, Solutions Engineering, Technical PM)
-- `pre-made/product-decision-data-science` (Product Data Science, Decision Science, Analytics)
-- `pre-made/quantitative-research-finance` (Quant Research, Trading, Financial Engineering)
-- `pre-made/software-data-engineering` (Software Engineering, Data Engineering, Backend)
-*(Or `master/resume.md` if cross-domain).*
-
-Do NOT search or inspect `applications/` for prior examples or context.
-Create a new application folder (e.g. `applications/<company-role>/`, lowercase hyphenated, e.g. `applications/stripe-swe/`).
-
-### 2. Formulate the Tailored `resume.md`
-Generate `<target-folder>/resume.md`:
-- **Contact Header Invariance**: The contact line must strictly match canonical `[ml5536@columbia.edu](mailto:ml5536@columbia.edu) | 347-774-6979 | [lhnminh.github.io](https://lhnminh.github.io/) | [linkedin.com/in/morganhle](https://www.linkedin.com/in/morganhle/)`. Never alter email (e.g. to personal gmail) or reformat links, as this will fail validation.
-- **Mandatory Experience**: Every verified employer and role must retain at least one substantive bullet. Technologies/tools metadata does not count. Allocate more bullets/depth to roles matching the JD; prefer two or more where relevant and practical, while permitting one when needed.
-- **Projects Portfolio Selection Matrix**: Select 1–2 high-relevance projects from `master/resume.md` matching the target discipline:
-  - *Software Engineering / Full-Stack / Systems*: `Dwellwise` (WebMCP, TypeScript, 3D/React Three Fiber, PostgreSQL) and/or `ZephyrAQ` (FastAPI, PostgreSQL, Next.js).
-  - *AI / Agent Engineering / Applied LLM*: `ZephyrAQ` (DataHub context, Gemini, agent hackathon, auditable histories) and/or `Axiom` (Swift, PDFKit, LLM APIs) or `Dwellwise` (WebMCP agent tool integration).
-  - *Data Science / Machine Learning / Analytics*: `Housing Prices Competition` (Kaggle top 8%, scikit-learn, XGBoost) and/or `ZephyrAQ` (geospatial feature engineering, multi-source pipeline).
-  - *Consulting / Strategy / Product*: `ZephyrAQ` (multi-source investigation, executive presentation) or `Axiom` (collaborative build, rapid product delivery).
-- **Coursework Alignment**: Dynamically select 4–5 verified courses per role:
-  - *SWE / Systems*: Advanced Algorithm, Computer Systems, Database System, Machine Learning.
-  - *AI / ML / Agent*: Machine Learning, Natural Language Processing, Agentic Engineering, Statistical Inference & Modelling.
-  - *Data Science / Decision Science*: Statistical Inference & Modelling, Machine Learning, Predictive Analysis, Econometrics.
-  - *Consulting / Strategy / BizOps*: Econometrics, Predictive Analysis, Database System, Advanced Algorithm.
-- **Technical Skills Section vs Embedded Technologies**:
-  - For technical tracks (SWE, MLE, Agent, Data Science), add a dedicated `## Technical Skills` section at the bottom (Jake renderer supports standard category lines):
-    ```markdown
-    ## Technical Skills
-    - **Languages:** Python, TypeScript, SQL, Swift
-    - **Frameworks & Systems:** React, Next.js, FastAPI, PostgreSQL, PyTorch, MLflow, DataHub, WebMCP, LLM APIs
-    ```
-  - For consulting/strategy tracks, if vertical space is tight, embedded `- **Technologies:** ...` bullets under roles may be used instead.
-- **No Hallucinations**: Employer names, dates, official job titles, and verified metrics must not be altered.
-- **1-Page A4 Budget**: Design line counts to comfortably fit a 1-page A4 PDF under the standard Jake 11pt template (typically ~35–45 total lines of content). Never rely on Vmock to shrink text.
-- If the resume is too long, first condense wording, consolidate technology lists, or remove lower-priority projects. A job may be reduced to one substantive bullet when needed; never drop its substantive coverage.
-- **Output File Hygiene & Completion**: The output PDF must strictly be named `Morgan_Le_Resume.pdf` (never `Le_Resume.pdf` or whitespace-polluted names). Never leave a session incomplete with only `resume.md`; always compile and validate with `validate_resume.py`.
-
-### 3. Present the Full Unified Diff & Rationale
-> **CRITICAL REQUIREMENT**: **Always show the complete, full diff**. Never truncate, summarize, or omit sections. The in-chat diff must represent the entire customized document across all sections (Education, Experience, Projects, Skills) so the user can verify all inclusions, exclusions, and modifications at a glance before building.
-
-In the same first response, show:
-1. A complete in-chat Markdown diff block (`diff`) comparing the tailored `resume.md` against the base premade:
-   - `+` Added bullets or projects
-   - `-` Removed bullets or projects
-   - `~` Adjusted skills or keywords
-2. A brief 3-point rationale:
-   - Why specific projects and bullet points were emphasized.
-   - Which target keywords were matched.
-   - Target page budget (Jake standard 11pt; Vmock is discontinued).
-3. Notify the user they can inspect the file directly, open side-by-side comparison in their IDE, or run:
+1. Explain the selected baseline and intended changes before writing. Tailor only from verified material; ask for confirmation of any new fact.
+2. Save the tailored Markdown and immediately build and validate. If using a baseline, run:
    ```bash
-   uv run python scripts/diff_resume.py <base-path> <target-path>
+   uv run python scripts/prepare_application.py applications/<company-role> --base pre-made/<track>
    ```
+   Use `--base master/resume.md` when no premade exists. Alternatively run the converter with `--template jake --build` and the validator below.
+3. Run `uv run python .agents/skills/tailor-resume/scripts/validate_resume.py applications/<company-role>` before visual QA. Inspect the rendered page for clipping, overlap, glyphs, and awkward wraps. Automated checks do not substitute for visual inspection. Never present a failed or stale build as verified.
+4. Present the verified PDF alongside the complete, unabbreviated Markdown diff against the saved baseline, including unchanged context. Explain the job-specific emphasis briefly. Resolve page overflow using verified wording and rebuild after each requested tweak.
+5. Read the output filename from `.resume/settings.json` when present; defaults are `Resume.pdf` and `Cover_Letter.pdf`. Respect an explicit request to defer building or provide Markdown only.
 
-### 4. User Approval & Immediate Build (Turn 2)
-- If the user approves ("Looks good", "Build it", "Approved"):
-  - Compile the resume to LaTeX and PDF:
-    ```bash
-    uv run python scripts/md_to_latex.py <target-folder>/resume.md --template jake --build
-    ```
-  - If the content overflows 1 page in Jake (11pt), propose specific line condensations to fit within 1 page. **Never use `--template vmock` (it is discontinued).**
-  - Run the validator:
-    ```bash
-    uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "<target-folder>"
-    ```
-  - Verify the rendered PDF is exactly one A4 page, with active hyperlinks and clean typography.
-  - Treat any validator error reporting zero substantive bullets for a job as a hard failure. Revise with verified content before approval.
-- If the user requests tweaks (e.g. *"Swap bullet 2 for bullet 3 in Shopee"*, *"Add Docker to skills"*):
-  - Apply the requested edits directly to `<target-folder>/resume.md`.
-  - **Always show the complete updated full diff** against the base (not just a snippet of the modified line).
-  - Compile and verify once approved.
+## Optional entry-by-entry review
 
----
+Use `.agents/skills/tailor-resume/scripts/session_ledger.py` when the user requests detailed review. Persist explicit bullet/project decisions in atomic batches; employer, historical title, and date lines remain locked. Retain all jobs while selecting projects.
 
-## Detailed Entry-by-Entry Mode (Ledger)
+## Assistants without local tools
 
-If the user explicitly requests an entry-by-entry review or uses the interactive ledger:
-- Use `.agents/skills/tailor-resume/scripts/session_ledger.py`.
-- Run `uv run python .agents/skills/tailor-resume/scripts/session_ledger.py start <session-id> --target-slug <slug> --job-description-file <path>`.
-- Review entries section by section and persist decisions in atomic batches before replying.
-
-## Route Resume Workspace Sessions
-
-When the user refers to the local Resume Workspace, its browser UI, or a session created there, use the workspace bridge:
-```bash
-uv run python webapp/manage.py sessions
-uv run python webapp/manage.py context <session-id>
-uv run python webapp/manage.py submit <session-id> <analysis-json-file>
-uv run python webapp/manage.py revise <session-id> <request-id> <suggestion-json-file>
-```
-
-## Route Reusable Premade Work
-
-When the user asks to create or update a reusable variant under `pre-made/`:
-- Maintain `resume.md`, compiled `_resume.tex`, and verified `Morgan_Le_Resume.pdf`.
-- Compile using `uv run python scripts/md_to_latex.py <premade-folder>/resume.md --template jake --build`.
+Read `docs/PORTABLE_WORKFLOW.md`. Ask the user to supply the active master, selected baseline, and job description. Return complete Markdown and the full diff in chat so the user can save and build locally. Report PDF verification as pending until the build and visual checks actually occur. No JSON handoff or separate application is required.

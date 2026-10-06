@@ -1,114 +1,37 @@
-# Conversational Resume Skill Specification
+# Chat-based resume workflow specification
 
 ## Goal
 
-Provide a repo-specific Codex skill that creates and reviews resume variants directly in the active Codex conversation. Do not recreate Codex chat through a nested Python application.
+Provide an assistant-neutral chat workflow for verified, application-specific resumes and cover letters. The active assistant proposes wording, explains changes, and uses deterministic local tools to validate and build. No web application, HTTP server, browser interface, suggestion bridge, nested model call, or provider credentials are part of the workflow.
 
-The workflow supports two intents:
+## Sources and privacy
 
-1. **Tailor:** Create a polished one-page application-specific resume from a pasted job description.
-2. **Review:** Walk through a resume section by section, entry by entry, and bullet by bullet with conversational Codex feedback.
+`master/resume.md` is the private canonical source. Only active, uncommented content and explicitly confirmed facts are verified. `pre-made/` holds optional private baselines; `applications/` holds generated outputs and is never a reference catalog. Public sample facts must not be attributed to a new applicant.
 
-The repo-specific skill lives at `.agents/skills/tailor-resume/`. It is the only interactive interface; the Python code under the skill is deterministic validation support, not a chat application.
+Automated master updates are append-only and require an explicit source-of-truth request. Preserve employers, historical titles, dates, contacts, and verified outcomes. Every work position retains at least one substantive bullet; technologies do not count. Prefer more coverage where relevant and practical.
 
-## Canonical content
+## Portable entry points
 
-- `master/_resume.tex` remains the comprehensive source of truth.
-- Automated interactive operations may only append explicitly accepted content to the master source.
-- The skill must never replace or delete an existing master bullet, entry, project, section, or verified fact.
-- Tailored versions may select, reorder, condense, replace, or remove content without changing the master source.
-- An accepted tailored bullet reaches the master source only through an explicit `/source` action.
+Explicitly load `AGENTS.md`, optional `.resume/preferences.md`, and the applicable skill file by path. Automatic skill discovery is optional. An assistant with local file and shell access can run the entire workflow. An assistant without local access can return Markdown and a complete diff in chat; the user saves and builds locally. See `docs/PORTABLE_WORKFLOW.md`.
 
-## Facts and claims
+The optional `.agents/skills/tailor-resume/scripts/session_ledger.py` persists decisions for detailed entry-by-entry chat review. It tracks the master hash, explicit choices, and undoable atomic decision batches. A changed master requires reconciliation.
 
-- Codex may rewrite verified facts already present in the source of truth.
-- Codex may ask the user for an additional fact or metric.
-- A new fact becomes verified only after the user explicitly supplies or confirms it.
-- Codex must not independently invent employers, titles, dates, responsibilities, technologies, metrics, or outcomes.
-- Historical company names and job titles must remain unchanged.
+## Default tailoring and review
 
-## Tailor workflow
+Read the complete job description and active master, choose a premade baseline when available, and explain intended changes. Select and rewrite only verified content into the targeted Markdown. Build and validate immediately unless the user explicitly defers building. Present the current PDF with the full unabbreviated diff and concise rationale. Rebuild after requested tweaks.
 
-The user invokes `$tailor-resume` and pastes a job description in the Codex conversation. The skill then:
+The assistant must not invent facts, independently accept suggestions during detailed review, publish applications, or overwrite unrelated versions. Existing-output replacement requires authorization. Requested updates to an explicitly selected application may read only that target.
 
-1. Uses the active repository-aware Codex conversation; it does not start a nested Codex thread.
-2. For a new session, reads the complete master resume and job description without changing the source. Never inspects or searches the ephemeral `applications/` folder.
-3. Creates a gitignored decision ledger containing parsed source-order entries and a master hash for resumability.
-4. Walks through Education and Relevant Experience entry by entry. Every education item and verified job is shown with all of its numbered bullets and Codex recommendations together. All work positions remain represented; the contact header is excluded, while entry headers are locked context.
-5. Before project bullet review, shows a single shortlist containing every verified project, gives one job-specific Include or Exclude recommendation per project, and requires an explicit selection for each. Only included projects proceed to bullet review; excluding a project is an explicit entry-level removal from the tailored version.
-6. Lets the user point to a specific bullet within the visible entry using natural language, such as “rewrite line 2 with more finance emphasis,” without losing the surrounding job context.
-7. Requires an explicit decision for every bullet in each mandatory or included entry before moving on. The user may accept, keep, remove, regenerate, rework, accept all, keep all, go back, undo, or quit.
-8. Saves every explicit bullet and project-selection decision before replying. Decisions made in one user message are written together in one atomic batch.
-9. Suggests a descriptive folder slug and requires confirmation before creating or overwriting a folder.
-10. Builds temporary previews only after every mandatory entry and included project has been reviewed.
-11. If the draft exceeds one page, enters an interactive page-fit pass. It presents low-relevance or metadata lines one at a time and requires the user to keep, remove, or approve a shorter rewrite. The tool never deletes or rewrites a line automatically.
-12. Runs the deterministic validator against verified master facts, historical titles, PDF structure, and the one-substantive-bullet minimum for every work position.
-13. Audits every proposed claim against the master source and explicit user confirmations.
-14. Shows a final diff and requires confirmation before writing the tailored folder.
-15. Builds and verifies exactly one A4 page, extractable text, and hyperlinks.
-16. Renders the final PDF and visually rejects clipping, overlap, broken glyphs, awkward page breaks, or orphaned headings.
+## Output
 
-There is no non-interactive acceptance shortcut because it would bypass the required entry review and bullet decisions.
+Use Jake for tailored resumes, exactly one A4 page for each resume and letter, and Markdown as the editable source. Outputs belong to `applications/<company-role>/` with `resume.md`, `_resume.tex`, and the configured resume PDF; optional letters have equivalent files. The Markdown master is never compiled.
 
-## Review workflow
+Defaults are `Resume.pdf` and `Cover_Letter.pdf`. Private `.resume/settings.json` configures filenames; `.resume/preferences.md` holds applicant-specific writing and formatting preferences. New clones must not inherit another applicant's private settings.
 
-The user selects the master source or an existing tailored version and may optionally paste a job description. The tool then:
+Builders compile temporarily, normalize to PDF 1.5 with classic cross-references, preserve extractable text and links, and reject invalid final PDFs before replacing previous output. `scripts/prepare_application.py` stages builds, produces full diffs and review images, and publishes outputs only after checks pass. Visual inspection is required before describing layout as verified.
 
-1. Parses sections, entries, and bullets from the selected `_resume.tex`.
-2. Presents one complete entry at a time with numbered bullets, assessments, and suggested wording.
-3. Accepts natural-language instructions targeting one or several numbered bullets, plus requests to keep all, accept all, go back, undo, or revisit a section.
-4. Requires an explicit decision for every bullet and summarizes each section before moving on.
-5. Shows a final diff and requests confirmation before saving.
-6. Builds and verifies the selected resume after saving.
+## Setup and tests
 
-For master review, accepting revised wording appends it beside the existing bullet; it never replaces the original. For tailored review, acceptance replaces only the selected tailored bullet. Master insertion always requires an explicit source-of-truth request.
+Use Python 3.12+, uv, Bash, Tectonic, and Poppler. Windows users need a compatible Linux environment such as WSL for Bash builds. `scripts/init_workspace.py` initializes from supplied Markdown or an explicit public demo and refuses to overwrite existing master content. `scripts/doctor.py` reports dependencies without installing them.
 
-## Page and content requirements
-
-- Every generated tailored PDF must be exactly one A4 page.
-- Every verified work position must remain present.
-- Each position must retain at least one substantive bullet; technology/tool bullets do not count toward this minimum.
-- Additional bullets should be allocated to the positions most relevant to the job description.
-- Repeated technology lists should be consolidated into the skills section before substantive experience is removed.
-- Projects may be selected and condensed after every work position is represented.
-- The master source-of-truth PDF may contain multiple pages.
-- Page fitting should prefer concise writing and removal of repetition over illegibly small text or extreme margins.
-- Page fitting must never remove or rewrite content automatically.
-- If the user's accepted fitting decisions cannot produce a valid one-page PDF without violating the content floor, the tool must report the failure instead of claiming success.
-
-## Reusable premade formats
-
-- Every reusable variant under `pre-made/<purpose>/` contains its `resume.md` content source, compiled `_resume.tex`, and 1-page A4 `Morgan_Le_Resume.pdf`.
-- Canonical layout templates live in `templates/Jake/` and `templates/Loc/` (`templates/Vmock/` is discontinued and must not be used by agents).
-- Use `scripts/md_to_latex.py` to compile `resume.md` to supported templates (`jake`, `loc`).
-
-## Sessions
-
-- Interactive state is stored under `.resume/sessions/`, which is gitignored.
-- A skill session ledger records the target, master hash, job description, current section and entry, explicit project selections, accepted bullet decisions, and confirmed facts.
-- A continuing session verifies the current master hash and, when it matches, loads only the active entry instead of rereading the full master and repository instructions.
-- A hash mismatch marks the session stale and requires a complete master reread and reconciliation before any further decision is saved.
-- The active Codex task and ledger provide conversational continuity.
-- Completed skill ledgers are removed after successful verification unless the user requests retention.
-
-## Authentication and model selection
-
-- The skill runs in the user's active Codex session and uses its existing authentication and configured model.
-- No OpenAI API key, local Codex SDK wrapper, or nested model call is required.
-
-## Safety boundaries
-
-- Codex preserves the source during analysis and applies only explicitly accepted edits with repository tools.
-- PDF page images are temporary, used only for visual QA, and deleted immediately afterward.
-- Folder paths and slugs must remain inside the repository.
-- Existing tailored folders require explicit overwrite confirmation.
-- The bundled validator checks LaTeX structure, historical titles, numeric claims, one-page A4 output, text extraction, and hyperlinks.
-- The skill never commits or pushes Git changes without an explicit request.
-
-## Invocation
-
-```text
-Use $tailor-resume to tailor my resume for this job description:
-
-<job description>
-```
+Tests use public or fictional fixtures and need no private master or model account. Real PDF integration tests are opt-in. Keep caches, local settings, session state, and temporary renders untracked. Never commit or push without explicit user authorization.

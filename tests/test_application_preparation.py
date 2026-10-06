@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import prepare_application as preparation
 from verify_submission_pdf import verify_submission
+from output_names import output_name
 
 
 def fixture_pdf(path: Path, *, pages: int = 1, width: float = 595.28, text: bool = True) -> None:
@@ -37,15 +38,13 @@ def fixture_pdf(path: Path, *, pages: int = 1, width: float = 595.28, text: bool
 
 
 class SubmissionBuildTests(unittest.TestCase):
-    def test_verifier_rejects_bad_submissions_and_allows_internal_overflow(self):
+    def test_verifier_rejects_bad_submissions(self):
         with tempfile.TemporaryDirectory() as directory:
             pdf = Path(directory) / "fixture.pdf"
             for options in ({"pages": 2}, {"width": 612}, {"text": False}):
                 fixture_pdf(pdf, **options)
                 with self.assertRaises(ValueError):
                     verify_submission(pdf)
-            fixture_pdf(pdf, pages=2)
-            self.assertEqual(2, verify_submission(pdf, allow_multiple_pages=True)["pages"])
             pdf.write_bytes(b"corrupt")
             with self.assertRaises(Exception):
                 verify_submission(pdf)
@@ -61,8 +60,8 @@ class SubmissionBuildTests(unittest.TestCase):
             fake.chmod(0o755)
             env = dict(os.environ, RESUME_TECTONIC_BIN=str(fake),
                        RESUME_PYTHON_BIN=sys.executable, TEST_PDF=str(fixture))
-            for kind, name in (("resume", "Morgan_Le_Resume.pdf"),
-                               ("cover_letter", "Morgan_Le_Cover_Letter.pdf")):
+            for kind, name in (("resume", output_name(ROOT, "resume")),
+                               ("cover_letter", output_name(ROOT, "cover_letter"))):
                 (folder / f"_{kind}.tex").write_text("fixture")
                 output = folder / name
                 for options in ({"pages": 2}, {"width": 612}, {"text": False}):
@@ -95,8 +94,8 @@ class SubmissionBuildTests(unittest.TestCase):
 
 
 class ApplicationPreparationTests(unittest.TestCase):
-    @unittest.skipUnless(os.environ.get("RESUME_APP_PDF_INTEGRATION") == "1",
-                         "set RESUME_APP_PDF_INTEGRATION=1 for real PDF preparation")
+    @unittest.skipUnless(os.environ.get("RESUME_PDF_INTEGRATION") == "1",
+                         "set RESUME_PDF_INTEGRATION=1 for real PDF preparation")
     def test_real_combined_preparation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -152,8 +151,8 @@ Sample Applicant
                 review = preparation.prepare(target, {
                     "resume": base / "resume.md", "cover_letter": base / "cover_letter.md",
                 }, [])
-            for kind, filename in (("resume", "Morgan_Le_Resume.pdf"),
-                                   ("cover_letter", "Morgan_Le_Cover_Letter.pdf")):
+            for kind, filename in (("resume", "Resume.pdf"),
+                                   ("cover_letter", "Cover_Letter.pdf")):
                 self.assertEqual(1, verify_submission(target / filename)["pages"])
                 self.assertTrue((review / f"{kind}-1.png").is_file())
                 self.assertTrue((review / f"{kind}.diff").is_file())
@@ -188,7 +187,7 @@ Sample Applicant
                 if "--output" in command:
                     Path(command[command.index("--output") + 1]).write_text("generated")
                 elif command[0].endswith("build_resume.sh"):
-                    fixture_pdf(root / command[1] / "Morgan_Le_Resume.pdf")
+                    fixture_pdf(root / command[1] / "Resume.pdf")
                 elif command[0] == "renderer":
                     Path(command[-1] + "-1.png").write_bytes(b"image")
                 else:

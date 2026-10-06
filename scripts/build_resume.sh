@@ -5,9 +5,22 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SOURCE_DIR_ARG="${1:-}"
 SOURCE_NAME="_resume.tex"
-OUTPUT_NAME="Morgan_Le_Resume.pdf"
+OUTPUT_NAME="Resume.pdf"
 SHARED_LATEX_DIR="$REPO_ROOT/shared/latex"
 NORMALIZER="$REPO_ROOT/scripts/normalize_pdf.py"
+
+if [[ -n "${RESUME_PYTHON_BIN:-}" ]]; then
+  PYTHON_BIN="$RESUME_PYTHON_BIN"
+elif [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
+  PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="$(command -v python3)"
+else
+  echo "Python 3 is required for PDF compatibility normalization." >&2
+  exit 2
+fi
+
+OUTPUT_NAME="$("$PYTHON_BIN" "$REPO_ROOT/scripts/output_names.py" resume --repository "$REPO_ROOT")"
 
 if [[ -z "$SOURCE_DIR_ARG" || $# -gt 1 ]]; then
   echo "Usage: $0 <resume-folder>" >&2
@@ -71,28 +84,12 @@ cp "$SOURCE_DIR/$SOURCE_NAME" "$BUILD_DIR/$SOURCE_NAME"
   "$TECTONIC_BIN" --keep-logs --outdir "$BUILD_DIR" "$SOURCE_NAME"
 )
 
-if [[ -n "${RESUME_PYTHON_BIN:-}" ]]; then
-  PYTHON_BIN="$RESUME_PYTHON_BIN"
-elif [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
-  PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
-elif command -v python3 >/dev/null 2>&1; then
-  PYTHON_BIN="$(command -v python3)"
-else
-  echo "Python 3 is required for PDF compatibility normalization." >&2
-  exit 2
-fi
-
 RAW_PDF="$BUILD_DIR/${SOURCE_NAME%.tex}.pdf"
 NORMALIZED_PDF="$BUILD_DIR/$OUTPUT_NAME"
 "$PYTHON_BIN" "$NORMALIZER" "$RAW_PDF" "$NORMALIZED_PDF"
 
-# Verify before replacing the previous PDF. Only private workspace previews
-# may contain multiple pages so users can review page-fitting choices.
-case "$SOURCE_DIR" in
-  "$REPO_ROOT/.resume/webapp/previews/"*)
-    "$PYTHON_BIN" "$REPO_ROOT/scripts/verify_submission_pdf.py" "$NORMALIZED_PDF" --allow-multiple-pages ;;
-  *) "$PYTHON_BIN" "$REPO_ROOT/scripts/verify_submission_pdf.py" "$NORMALIZED_PDF" ;;
-esac
+# Final submissions must always be exactly one A4 page.
+"$PYTHON_BIN" "$REPO_ROOT/scripts/verify_submission_pdf.py" "$NORMALIZED_PDF"
 
 cp "$NORMALIZED_PDF" "$OUTPUT_PATH"
 echo "Created $OUTPUT_PATH"

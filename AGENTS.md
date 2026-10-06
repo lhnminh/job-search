@@ -1,5 +1,12 @@
 # Resume Repository Instructions
 
+
+## Portable entry point and local preferences
+
+Any assistant with repository access can follow these rules by reading this file and the applicable `SKILL.md` directly. Automatic skill discovery and provider-specific metadata are optional. See `docs/PORTABLE_WORKFLOW.md` for local commands and manual Markdown handoff.
+
+If `.resume/preferences.md` exists, read it for applicant-specific writing and formatting preferences. Preserve it locally; never publish it or assume it exists on another clone. Default PDF names are `Resume.pdf` and `Cover_Letter.pdf`; `.resume/settings.json` may set `resume_pdf` and `cover_letter_pdf` to plain PDF filenames. Wherever the rules mention default output names, use the configured filename when present. Existing private materials stay untouched.
+
 ## Purpose
 
 This repository maintains one comprehensive resume reference and multiple application-specific resume versions.
@@ -39,7 +46,7 @@ Only active, uncommented resume content is verified as the user's. Commented-out
 - Preserve unrelated reference content whenever adding or updating material.
 - Build new tailored versions from the latest `master/resume.md` unless the user explicitly names another starting point.
 
-### Interactive Codex source rules
+### Interactive assistant source rules
 
 The repo-specific `tailor-resume` skill is the interactive workflow. It follows a stricter append-only policy for the master source of truth:
 
@@ -48,22 +55,21 @@ The repo-specific `tailor-resume` skill is the interactive workflow. It follows 
 - Tailored versions may replace or remove their own content without changing the master source.
 - A tailored proposal is appended to the master only after the user explicitly selects `/source`.
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
-- Tailoring must happen directly in the active Codex conversation. Do not create a nested Codex chat, terminal chat interface, or require a separate API key.
-- The local Resume Workspace may present that same workflow visually. Its state belongs under the gitignored `.resume/webapp/` directory, and AI suggestions must still come from the active Codex conversation through the workspace bridge or registered WebMCP tools. The web server must not start a nested model session.
+- Tailoring must happen directly in the active assistant conversation. Do not create a nested model chat, terminal chat interface, or require a separate API key.
 - **Primary Tailoring Workflow (Fast Markdown Diff)**:
   - Do NOT inspect, read, or search the `applications/` folder (it contains transient files and is never a reference source).
   - Select the closest base `resume.md` directly from `pre-made/` (or `master/resume.md`).
   - Create the tailored version in `applications/<company-role>/resume.md`.
   - **Always show the complete full diff**: Present the full, unabbreviated in-chat Markdown diff across the entire resume (never truncate, summarize, or omit sections) alongside a concise bullet/skill rationale against the base resume. Whenever tweaks are made, always output the complete updated full diff.
-  - The user reviews the full diff directly in chat or using `python scripts/diff_resume.py <base> <target>` / native IDE diff viewers.
-  - Upon user approval or targeted tweaks, compile to PDF using `python scripts/md_to_latex.py <target>/resume.md --template jake --build` and verify 1-page A4 compliance (never use `vmock` — it is discontinued; condense content if space is tight).
-- **Detailed Entry-by-Entry Mode (Ledger / Webapp)**:
-  - If the user explicitly asks for step-by-step entry-by-entry review, use the ledger workflow under `.resume/sessions/` or the local Resume Workspace webapp. Employer, historical title, and date lines remain locked context.
+  - Present the verified PDF alongside the complete diff for review. The user reviews the full diff directly in chat or using `python scripts/diff_resume.py <base> <target>` / native IDE diff viewers.
+  - Immediately after tailoring and after each requested tweak, compile to PDF without waiting for separate build approval using `python scripts/md_to_latex.py <target>/resume.md --template jake --build` and verify 1-page A4 compliance (never use `vmock` — it is discontinued; condense content if space is tight).
+- **Detailed Entry-by-Entry Mode (Ledger)**:
+  - If the user explicitly asks for step-by-step entry-by-entry review, use the ledger workflow under `.resume/sessions/`. Employer, historical title, and date lines remain locked context.
 - Automated skill operations may append accepted bullets, projects, or facts to `master/resume.md` only when the user explicitly requests it.
 - Never automatically delete or weaken master content.
 - Tailored versions may select, replace, or remove their own content without changing the master source.
 - A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
-- Tailoring must happen directly in the active Codex or Antigravity conversation. Do not create a nested chat or require a separate API key.
+- Tailoring must happen directly in the active assistant conversation. Do not create a nested chat or require a separate API key.
 
 These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill is applying a change.
 
@@ -93,9 +99,9 @@ For a new tailored version:
 1. Create a descriptive internal folder (e.g. `<company-role>/`).
 2. Adapt from the closest `pre-made/<track>/resume.md` (or `master/resume.md`).
 3. Select, reorder, condense, or align the most relevant verified content to the job description.
-4. Present and review the diff with the user (always show the complete, unabbreviated diff in chat, or use `scripts/diff_resume.py` / IDE diff viewer).
-5. Preserve factual accuracy and quantified outcomes.
-6. Compile and verify the tailored version using `python scripts/md_to_latex.py <target>/resume.md --template jake --build`, ensuring exactly 1 A4 page (never use `vmock`).
+4. Preserve factual accuracy and quantified outcomes.
+5. Immediately compile and verify the tailored version using `python scripts/md_to_latex.py <target>/resume.md --template jake --build`, ensuring exactly 1 A4 page (never use `vmock`). Do not wait for separate build approval.
+6. Present the verified PDF alongside the complete, unabbreviated in-chat diff for review. After requested tweaks, rebuild, verify, and show the updated PDF and complete diff in the same turn.
 
 Tailored versions are selective snapshots. They do not replace the reference and do not automatically update existing variants unless the user asks for synchronization.
 
@@ -105,7 +111,7 @@ Reusable variants under `pre-made/<purpose>/` each contain:
 
 - `resume.md` as the format-neutral content source.
 - `_resume.tex` as the standalone compiled LaTeX source (using the default Jake layout).
-- `Morgan_Le_Resume.pdf` as the built, normalized 1-page A4 PDF.
+- `Resume.pdf` as the built, normalized 1-page A4 PDF.
 
 Formatting templates live under `templates/`:
 - `templates/Jake/` for the standard 11pt Jake template.
@@ -135,18 +141,19 @@ Cover letters follow the same principles as the resume tailoring workflow:
 - **Do not inspect `applications/`**: Reference facts and accomplishments come strictly from `master/resume.md`, and baseline starting letters come from `pre-made/<track>/cover_letter.md`.
 - **Target destination**: Tailored letters are written to `applications/<company-role>/cover_letter.md`.
 - **4-Paragraph Narrative**:
-  1. *The Hook & Trajectory*: Position, company, current Columbia MS Data Science, and narrative career bridge.
-  2. *Core Proof & Impact*: 1-2 quantified, verified accomplishments from `master/resume.md` (e.g. BCG $10B infrastructure, Shopee $100K ARR, etc.). Never invent unverified metrics.
+  1. *The Hook & Trajectory*: Position, company, the applicant’s verified education or current work, and narrative career bridge.
+  2. *Core Proof & Impact*: 1-2 relevant, verified accomplishments from `master/resume.md`, quantified when verified metrics exist. Never invent unverified metrics.
   3. *Technical & Builder Progression*: Real projects, hackathons, cloud systems, and coursework.
   4. *Company Alignment & Call to Action*: Specific interest in the company's product, team, or challenge + value proposition.
 - **Zero Placeholders**: Placeholders like `[Company Name]`, `[Position Title]`, or `______` must be completely replaced with concrete target details before building.
-- **MongoDB Project**: Always touch on the verified MongoDB project ([Self-Improving Computer Use](https://github.com/lhnminh/recursive-computer-use) | MongoDB's Harness Engineering Hackathon 3rd Place, MongoDB Atlas & Vector Search, 9× speedup) in the builder/technical progression narrative.
+- **Relevant Projects**: Select projects only from the applicant’s active master content. Honor explicit local preferences without treating sample projects as universal requirements.
 - **No Location / Address**: Cover letters must not include applicant location or company address/location lines. The recipient block contains only the company name (and optional team).
 - **Strict 1-Page A4 Budget**: The letter must fit on a single A4 page.
 - **Build & Verification**:
+  - Build and verify immediately after tailoring and after every requested tweak, without waiting for separate build approval. Present the verified PDF alongside the complete in-chat diff for review.
   - Compile and build: `uv run python scripts/md_to_cover_letter.py <target-folder>/cover_letter.md --build`
   - Or directly build an existing `_cover_letter.tex`: `./scripts/build_cover_letter.sh <target-folder>`
-  - The build script normalizes output to PDF 1.5 at `<target-folder>/Morgan_Le_Cover_Letter.pdf`.
+  - The build script normalizes output to PDF 1.5 at `<target-folder>/Cover_Letter.pdf`.
   - Compare changes with `uv run python scripts/diff_cover_letter.py <base-path> <target-path>`.
   - Use the repo-specific `$tailor-cover-letter` skill for the conversational workflow.
 
@@ -170,8 +177,8 @@ Use the existing build script for tailored or pre-made folders containing `_resu
 - A folder argument builds that internal version (e.g. `./scripts/build_resume.sh pre-made/finance-consulting`).
 - `master/` is maintained purely as Markdown (`master/resume.md`) and is not compiled into a PDF.
 - To compile a markdown resume directly, use `python scripts/md_to_latex.py <path/to/resume.md> --template jake --build`.
-- A tailored build writes exactly `<selected-resume-folder>/Morgan_Le_Resume.pdf`.
-- Every active tailored or premade resume folder contains `_resume.tex` and its independent `Morgan_Le_Resume.pdf`.
+- A tailored build writes exactly `<selected-resume-folder>/Resume.pdf`.
+- Every active tailored or premade resume folder contains `_resume.tex` and its independent `Resume.pdf`.
 - Shared LaTeX classes, styles, and fonts belong only in `shared/latex/`.
 - Do not duplicate shared support files inside resume folders.
 - The build script must compile in a temporary directory containing the selected `_resume.tex` and copied `shared/latex/` files.
@@ -222,4 +229,3 @@ Follow this sequence and explain changes step by step:
 - Interactive skill sessions belong under the gitignored `.resume/sessions/` directory.
 - Use `uv run python -m unittest discover -v` for the validator test suite.
 - Use the repo-specific `$tailor-resume` skill for the primary conversational workflow. After building, run `uv run python .agents/skills/tailor-resume/scripts/validate_resume.py "<target-folder>"` before visual PDF QA.
-- Start the local Resume Workspace with `./scripts/run_resume_app.sh`. It must bind to a loopback address by default and preserve the same master-source, explicit-decision, one-page, validation, and visual-QA rules as the conversational workflow.

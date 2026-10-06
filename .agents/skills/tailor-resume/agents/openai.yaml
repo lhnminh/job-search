@@ -1,4 +1,4 @@
 interface:
   display_name: "Tailor Resume"
-  short_description: "Review and build tailored resumes with Codex"
+  short_description: "Review and build verified tailored resumes"
   default_prompt: "Use $tailor-resume to tailor my resume to this job description through an entry-by-entry review."

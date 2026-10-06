@@ -6,6 +6,10 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "scripts"))
+from output_names import output_name
 
 from resume_validation import (
     MASTER_SOURCE_RELATIVE_PATH,
@@ -19,7 +23,7 @@ from resume_validation import (
 
 def repository_root() -> Path:
     for parent in Path(__file__).resolve().parents:
-        if (parent / "AGENTS.md").is_file() and (parent / MASTER_SOURCE_RELATIVE_PATH).is_file():
+        if (parent / "AGENTS.md").is_file():
             return parent
     raise RuntimeError("Could not locate the resume repository root")
 
@@ -31,7 +35,7 @@ def parse_arguments() -> argparse.Namespace:
         "--confirmed-fact",
         action="append",
         default=[],
-        help="A user-confirmed fact allowed in addition to master/_resume.tex; repeat as needed",
+        help="A user-confirmed fact allowed in addition to master/resume.md; repeat as needed",
     )
     return parser.parse_args()
 
@@ -45,7 +49,7 @@ def main() -> int:
         print(json.dumps({"approved": False, "target": arguments.target, "errors": [str(error)]}, indent=2))
         return 1
     target_directory = source_path.parent
-    pdf_path = target_directory / "Morgan_Le_Resume.pdf"
+    pdf_path = target_directory / output_name(root, "resume")
     errors: list[str] = []
 
     if not source_path.is_file():
@@ -54,12 +58,12 @@ def main() -> int:
         errors.append(f"Tailored PDF not found: {pdf_path}")
     allowed_files = {
         "_resume.tex",
-        "Morgan_Le_Resume.pdf",
+        output_name(root, "resume"),
         "resume.md",
         "cover_letter.md",
         "_cover_letter.tex",
         "job_description.txt",
-        "Morgan_Le_Cover_Letter.pdf",
+        output_name(root, "cover_letter"),
     }
     if target_directory.is_dir():
         extras = sorted(
@@ -71,6 +75,8 @@ def main() -> int:
             errors.append("Unexpected files in tailored folder: " + ", ".join(extras))
 
     report = None
+    if not (root / MASTER_SOURCE_RELATIVE_PATH).is_file():
+        errors.append("Missing master/resume.md; run scripts/init_workspace.py first.")
     if not errors:
         root_source = (root / MASTER_SOURCE_RELATIVE_PATH).read_text(encoding="utf-8")
         tailored_source = source_path.read_text(encoding="utf-8")

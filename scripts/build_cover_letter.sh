@@ -5,9 +5,24 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SOURCE_DIR_ARG="${1:-}"
 SOURCE_NAME="_cover_letter.tex"
-OUTPUT_NAME="Morgan_Le_Cover_Letter.pdf"
+OUTPUT_NAME="Cover_Letter.pdf"
 SHARED_LATEX_DIR="$REPO_ROOT/shared/latex"
 NORMALIZER="$REPO_ROOT/scripts/normalize_pdf.py"
+
+if [[ -n "${COVER_LETTER_PYTHON_BIN:-}" ]]; then
+  PYTHON_BIN="$COVER_LETTER_PYTHON_BIN"
+elif [[ -n "${RESUME_PYTHON_BIN:-}" ]]; then
+  PYTHON_BIN="$RESUME_PYTHON_BIN"
+elif [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
+  PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="$(command -v python3)"
+else
+  echo "Python 3 is required for PDF compatibility normalization." >&2
+  exit 2
+fi
+
+OUTPUT_NAME="$("$PYTHON_BIN" "$REPO_ROOT/scripts/output_names.py" cover_letter --repository "$REPO_ROOT")"
 
 if [[ -z "$SOURCE_DIR_ARG" || $# -gt 1 ]]; then
   echo "Usage: $0 <cover-letter-folder>" >&2
@@ -70,19 +85,6 @@ cp "$SOURCE_DIR/$SOURCE_NAME" "$BUILD_DIR/$SOURCE_NAME"
   cd "$BUILD_DIR"
   "$TECTONIC_BIN" --keep-logs --outdir "$BUILD_DIR" "$SOURCE_NAME"
 )
-
-if [[ -n "${COVER_LETTER_PYTHON_BIN:-}" ]]; then
-  PYTHON_BIN="$COVER_LETTER_PYTHON_BIN"
-elif [[ -n "${RESUME_PYTHON_BIN:-}" ]]; then
-  PYTHON_BIN="$RESUME_PYTHON_BIN"
-elif [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
-  PYTHON_BIN="$REPO_ROOT/.venv/bin/python"
-elif command -v python3 >/dev/null 2>&1; then
-  PYTHON_BIN="$(command -v python3)"
-else
-  echo "Python 3 is required for PDF compatibility normalization." >&2
-  exit 2
-fi
 
 RAW_PDF="$BUILD_DIR/${SOURCE_NAME%.tex}.pdf"
 NORMALIZED_PDF="$BUILD_DIR/$OUTPUT_NAME"

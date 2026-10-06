@@ -14,6 +14,7 @@ import tempfile
 import uuid
 
 from verify_submission_pdf import ROOT, verify_submission
+from output_names import output_name
 from resume_validation import validate_tailored_completeness, validate_tailored_tex
 
 
@@ -87,7 +88,7 @@ def prepare(target: Path, bases: dict[str, Path], confirmed_facts: list[str]) ->
                 run([str(ROOT / "scripts/build_resume.sh"), str(staging.relative_to(ROOT))])
             else:
                 run(command + ["--build"])
-            pdf_name = "Morgan_Le_Resume.pdf" if kind == "resume" else "Morgan_Le_Cover_Letter.pdf"
+            pdf_name = output_name(ROOT, kind)
             pdf = staging / pdf_name
             reports[kind] = verify_submission(pdf)
             run([renderer, "-r", "120", "-png", str(pdf), str(staging / kind)])
