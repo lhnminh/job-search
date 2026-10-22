@@ -32,6 +32,8 @@ Use four connected paragraphs unless the user or baseline specifies otherwise:
 
 Preserve a user-approved opening when provided; otherwise write an opening appropriate to the actual applicant. Copy the contact header from the private master and sign with the applicant's own name. Include the current date and company/team, with no applicant or company address lines. Replace every target placeholder before building.
 
+Refer to the target role naturally in prose rather than copying the full posting title verbatim. For internships, use “the [Role or Discipline] Intern position,” for example “the Software Engineering Intern position.” Capitalize the role name in title case, including “Intern,” and keep surrounding words such as “the” and “position” lowercase. Preserve official company/product capitalization and technical acronyms. Preserve the actual role, specialization, and internship level; omit requisition codes, location suffixes, recruiting labels, and unnecessary punctuation. Keep a team or term when needed to distinguish the opportunity. This target-role wording is an allowed role substitution in an approved baseline; it does not authorize changing historical employment titles.
+
 Place the date and company on consecutive lines with no blank line between them, then leave two blank lines before the salutation. Verify this spacing in the rendered PDF.
 
 ## Build and review

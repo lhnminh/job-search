@@ -204,6 +204,8 @@ Default output names are `Resume.pdf` and `Cover_Letter.pdf`. Optional gitignore
 
 Put applicant-specific writing and layout preferences in `.resume/preferences.md`. Assistants read this optional file alongside the shared rules; they must confirm facts against the master. New clones do not inherit another applicant's private preferences.
 
+Cover-letter openings use natural target-role wording, such as “the Software Engineering Intern position,” rather than reproducing a full posting title with recruiting labels or requisition codes. Use title case for the role name, keep surrounding words such as “position” lowercase, and preserve official company/product capitalization and technical acronyms. Preserve the role, specialization, and internship level.
+
 ## Public and private files
 
 Only the approved example resume and reusable system code belong in the public repository.
