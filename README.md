@@ -98,7 +98,8 @@ The agent will:
 3. Propose targeted bullets and project choices using verified facts only.
 4. Save the tailored Markdown under `applications/<company-role>/`.
 5. Immediately build, validate, and visually inspect an ATS-readable, one-page A4 PDF.
-6. Show the verified PDF alongside the complete Markdown diff for review, without waiting for separate build approval.
+6. When subagents are available, get an independent recruiter-perspective review grounded in the job description, separating explicit requirements from editorial judgment. The reviewer gives feedback; the main agent checks facts and applies justified improvements.
+7. Rebuild and verify any revisions, then show the PDF, complete Markdown diff, and accepted/rejected feedback with reasons, without waiting for separate build approval. If delegation is unavailable, disclose that and use a self-review.
 
 For a cover letter, load `.agents/skills/tailor-cover-letter/SKILL.md` in the same way. Codex users may still invoke `$tailor-resume` or `$tailor-cover-letter`; automatic skill discovery is optional. Requested tweaks trigger an immediate rebuild and verification, followed by the updated PDF and complete diff. An explicit request for Markdown only or to defer building takes precedence.
 

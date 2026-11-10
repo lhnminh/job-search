@@ -33,6 +33,8 @@ The `applications/` directory contains ephemeral, transient tailored resumes tha
 - `applications/` is strictly a write destination for generated outputs (e.g., `applications/<company-role>/`), never an input, example catalog, or reference source.
 - Reference facts, projects, and skills come **exclusively** from `master/resume.md`, and starting track baselines come **exclusively** from `pre-made/`.
 - Never look for past applications or base a new resume on a past tailored version in `applications/`.
+- Narrow exception to the restrictions above: the main agent and its reviewer may read the exact resume artifacts created in the current task for review, revision, and verification. This does not authorize directory browsing or reading other applications.
+- Use one independent recruiter-perspective subagent review for a newly tailored resume when delegation is available, following `tailor-resume/SKILL.md`. This review delegation is allowed within the active task despite the nested-chat restrictions below; do not launch terminal model chats or require another API key. The main agent retains responsibility for tailoring and verification.
 
 ## Canonical Reference: `master/resume.md`
 

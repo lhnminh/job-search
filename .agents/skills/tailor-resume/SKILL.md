@@ -11,7 +11,7 @@ Use the active assistant conversation. Read `AGENTS.md` and, when present, the g
 
 - Verified facts come only from active, uncommented `master/resume.md` content and explicit user confirmations. Read the complete job description and master before starting.
 - Select an available `pre-made/<track>/resume.md` baseline when useful; otherwise use the master. Never invent a baseline or browse `applications/` for references.
-- Create the new tailored Markdown in `applications/<company-role>/resume.md`. Read an existing application only when the user explicitly selects it for updates.
+- Create the new tailored Markdown in `applications/<company-role>/resume.md`. Read an existing application only when the user explicitly selects it for updates. The main agent and reviewer may read the exact artifacts created in the current task for review and verification; never browse other applications.
 - Preserve employers, official titles, dates, contact details, and verified outcomes. Keep every work position with at least one substantive bullet; prefer more coverage for relevant roles. A technologies line is not substantive coverage.
 - Prioritize verified cross-functional collaboration, team leadership, and quantified revenue or business impact when allocating resume space. Trim additional projects and secondary technical details before removing these proof points; keep substantive coverage for every work position.
 - Select projects and coursework from the actual applicant's verified inventory. Never assume the public example's employers, education, projects, skills, or metrics belong to the applicant.
@@ -27,8 +27,22 @@ Use the active assistant conversation. Read `AGENTS.md` and, when present, the g
    ```
    Use `--base master/resume.md` when no premade exists. Alternatively run the converter with `--template jake --build` and the validator below.
 3. Run `uv run python .agents/skills/tailor-resume/scripts/validate_resume.py applications/<company-role>` before visual QA. Inspect the rendered page for clipping, overlap, glyphs, and awkward wraps. Automated checks do not substitute for visual inspection. Never present a failed or stale build as verified.
-4. Present the verified PDF alongside the complete, unabbreviated Markdown diff against the saved baseline, including unchanged context. Explain the job-specific emphasis briefly. Resolve page overflow using verified wording and rebuild after each requested tweak.
-5. Read the output filename from `.resume/settings.json` when present; defaults are `Resume.pdf` and `Cover_Letter.pdf`. Respect an explicit request to defer building or provide Markdown only.
+4. Run the independent recruiter-perspective review below. Apply justified changes using verified facts, then rebuild, validate, and visually inspect any revised output.
+5. Present the verified PDF alongside the complete, unabbreviated Markdown diff against the saved baseline, including unchanged context. Explain the job-specific emphasis briefly. Resolve page overflow using verified wording and rebuild after each requested tweak.
+6. Read the output filename from `.resume/settings.json` when present; defaults are `Resume.pdf` and `Cover_Letter.pdf`. Respect an explicit request to defer building or provide Markdown only.
+
+## Independent recruiter-perspective review
+
+For each newly tailored resume, delegate one review pass after the initial build and QA when subagents are available. Use a fresh context (for example, `fork_turns="none"`) without the drafting rationale. Keep this within the active task; no separate user chat, terminal model session, or API key is needed. If delegation is unavailable, disclose that and perform a clearly labeled self-review.
+
+Give the reviewer the full job description, current resume text and exact PDF/render paths, and applicable repository rules and local preferences. Assign this brief: "Review this resume from a recruiter's perspective for this specific job, and justify each suggested change." This is a simulated perspective, not recruiting credentials or knowledge of internal hiring criteria.
+
+- First assess immediate clarity of relevant experience, concrete evidence for requested skills, and vague, repetitive, overstated, or confusing wording. Distinguish explicit job requirements from editorial judgment. Do not invent a company rubric, ATS score, or interview probability.
+- After the first-impression assessment, consult active, uncommented `master/resume.md` content and supplied user-confirmed facts for stronger omitted evidence and factual checks. Never browse `applications/`; inspect only exact current-task artifacts supplied. Commented content is not applicant evidence.
+- Return strengths and prioritized actionable findings. Identify each affected bullet or section, the relevant job requirement or labeled readability concern, and a concrete suggestion. Cite verified source evidence for additions; flag missing evidence as a question, not an invented claim. Return no findings when none are justified.
+- Provide feedback only; do not edit files. Respect factual accuracy, all-position coverage, project limits, local preferences, and the one-page Jake layout. Review does not replace PDF validation or visual QA.
+- The main agent evaluates suggestions, applies supported improvements, and asks the user before treating new facts as verified. Include a brief review summary and accepted/rejected suggestions with reasons alongside the final verified PDF and complete diff.
+- Default to one pass, with at most one targeted follow-up if substantial issues remain after revision. Report unresolved concerns rather than looping. Minor user tweaks need no additional pass unless they introduce a substantive concern or the user requests it.
 
 ## Optional entry-by-entry review
 
