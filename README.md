@@ -20,7 +20,7 @@ Bring your own resume, add any reusable content or layout templates you prefer, 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/lhnminh/job-search
+git clone https://github.com/lhnmx/job-search.git
 cd job-search
 
 # macOS
@@ -220,6 +220,8 @@ Only the approved example resume and reusable system code belong in the public r
 | `pre-made/` | Personal reusable baselines | No |
 | `applications/` | Tailored resumes and cover letters | No |
 | `.resume/` | Sessions, previews, and private backups | No |
+
+`master/`, `pre-made/`, `applications/`, and `.resume/` remain local: commits and pushes do not synchronize these gitignored folders. Updating private resume sources or rebuilding their PDFs does not update the approved artifacts in `public/`. Publishing a private artifact requires explicit approval for that exact artifact; do not force-add private folders to Git.
 
 Previously committed private files remain in Git history until the history is rewritten. Ignoring them prevents future commits but does not erase earlier revisions.
 
