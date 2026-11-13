@@ -23,6 +23,9 @@ RESET = "\033[0m"
 
 def resolve_resume_path(path_str: str) -> Path:
     p = Path(path_str).resolve()
+    repo_root = Path(__file__).resolve().parents[1]
+    if not p.exists() and (repo_root / "pre-made" / path_str).exists():
+        p = (repo_root / "pre-made" / path_str).resolve()
     if p.is_dir():
         candidate = p / "resume.md"
         if candidate.exists():

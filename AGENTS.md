@@ -63,15 +63,10 @@ The repo-specific `tailor-resume` skill is the interactive workflow. It follows 
   - Select the closest base `resume.md` directly from `pre-made/` (or `master/resume.md`).
   - Create the tailored version in `applications/<company-role>/resume.md`.
   - **Always show the complete full diff**: Present the full, unabbreviated in-chat Markdown diff across the entire resume (never truncate, summarize, or omit sections) alongside a concise bullet/skill rationale against the base resume. Whenever tweaks are made, always output the complete updated full diff.
-  - Present the verified PDF alongside the complete diff for review. The user reviews the full diff directly in chat or using `python scripts/diff_resume.py <base> <target>` / native IDE diff viewers.
-  - Immediately after tailoring and after each requested tweak, compile to PDF without waiting for separate build approval using `python scripts/md_to_latex.py <target>/resume.md --template jake --build` and verify 1-page A4 compliance (never use `vmock` — it is discontinued; condense content if space is tight).
+  - Present the verified PDF alongside the complete diff for review. The user reviews the full diff directly in chat or using `uv run python scripts/diff_resume.py <base> <target>` / native IDE diff viewers.
+  - Immediately after tailoring and after each requested tweak, compile to PDF without waiting for separate build approval using `uv run python scripts/md_to_latex.py <target>/resume.md --template jake --build` and verify 1-page A4 compliance (never use `vmock` — it is discontinued; condense content if space is tight).
 - **Detailed Entry-by-Entry Mode (Ledger)**:
   - If the user explicitly asks for step-by-step entry-by-entry review, use the ledger workflow under `.resume/sessions/`. Employer, historical title, and date lines remain locked context.
-- Automated skill operations may append accepted bullets, projects, or facts to `master/resume.md` only when the user explicitly requests it.
-- Never automatically delete or weaken master content.
-- Tailored versions may select, replace, or remove their own content without changing the master source.
-- A new metric, responsibility, technology, or outcome requires explicit user confirmation before the skill may treat it as verified.
-- Tailoring must happen directly in the active assistant conversation. Do not create a nested chat or require a separate API key.
 
 These interactive-tool rules take precedence over the default manual merge semantics below whenever the skill is applying a change.
 
@@ -102,7 +97,7 @@ For a new tailored version:
 2. Adapt from the closest `pre-made/<track>/resume.md` (or `master/resume.md`).
 3. Select, reorder, condense, or align the most relevant verified content to the job description.
 4. Preserve factual accuracy and quantified outcomes.
-5. Immediately compile and verify the tailored version using `python scripts/md_to_latex.py <target>/resume.md --template jake --build`, ensuring exactly 1 A4 page (never use `vmock`). Do not wait for separate build approval.
+5. Immediately compile and verify the tailored version using `uv run python scripts/md_to_latex.py <target>/resume.md --template jake --build`, ensuring exactly 1 A4 page (never use `vmock`). Do not wait for separate build approval.
 6. Present the verified PDF alongside the complete, unabbreviated in-chat diff for review. After requested tweaks, rebuild, verify, and show the updated PDF and complete diff in the same turn.
 
 Tailored versions are selective snapshots. They do not replace the reference and do not automatically update existing variants unless the user asks for synchronization.
@@ -178,7 +173,7 @@ Use the existing build script for tailored or pre-made folders containing `_resu
 
 - A folder argument builds that internal version (e.g. `./scripts/build_resume.sh pre-made/finance-consulting`).
 - `master/` is maintained purely as Markdown (`master/resume.md`) and is not compiled into a PDF.
-- To compile a markdown resume directly, use `python scripts/md_to_latex.py <path/to/resume.md> --template jake --build`.
+- To compile a markdown resume directly, use `uv run python scripts/md_to_latex.py <path/to/resume.md> --template jake --build`.
 - A tailored build writes exactly `<selected-resume-folder>/Resume.pdf`.
 - Every active tailored or premade resume folder contains `_resume.tex` and its independent `Resume.pdf`.
 - Shared LaTeX classes, styles, and fonts belong only in `shared/latex/`.

@@ -42,6 +42,7 @@ class Entry:
     subtitle: str
     date: str
     bullets: list[Bullet] = field(default_factory=list)
+    historical_role: str = ""
 
 
 @dataclass(slots=True)
@@ -294,6 +295,9 @@ def _parse_markdown_resume(source: str) -> list[Entry]:
             )
             entries.append(current_entry)
             continue
+        if current_entry and stripped.startswith("**Historical Role:**"):
+            current_entry.historical_role = stripped.removeprefix("**Historical Role:**").strip()
+            continue
         if stripped.startswith("*") and stripped.endswith("*") and not stripped.startswith("*-"):
             date_val = stripped.strip("* ").strip()
             if current_entry and not current_entry.date:
@@ -480,6 +484,13 @@ def validate_tailored_tex(
         for entry in root_entries
         if "experience" in entry.section.casefold()
     }
+    # Explicit source metadata preserves an academic project's verified role
+    # when a permitted application track presents it as employment experience.
+    for entry in root_entries:
+        if "project" in entry.section.casefold() and entry.historical_role and entry.subtitle:
+            root_experience.setdefault(
+                entry.subtitle.casefold(), (entry.historical_role, entry.date)
+            )
     for entry in proposed_entries:
         if "experience" not in entry.section.casefold():
             continue

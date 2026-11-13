@@ -40,6 +40,28 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def find_unexpected_files(target_directory: Path, root: Path) -> list[str]:
+    allowed_files = {
+        "_resume.tex",
+        output_name(root, "resume"),
+        "resume.md",
+        "cover_letter.md",
+        "_cover_letter.tex",
+        "job_description.txt",
+        "job_description.md",
+        output_name(root, "cover_letter"),
+    }
+    if not target_directory.is_dir():
+        return []
+    return sorted(
+        path.name
+        for path in target_directory.iterdir()
+        if path.name not in allowed_files
+        and not path.name.startswith(".")
+        and path.suffix.lower() not in {".png", ".diff"}
+    )
+
+
 def main() -> int:
     arguments = parse_arguments()
     root = repository_root()
@@ -56,23 +78,9 @@ def main() -> int:
         errors.append(f"Tailored source not found: {source_path}")
     if not pdf_path.is_file():
         errors.append(f"Tailored PDF not found: {pdf_path}")
-    allowed_files = {
-        "_resume.tex",
-        output_name(root, "resume"),
-        "resume.md",
-        "cover_letter.md",
-        "_cover_letter.tex",
-        "job_description.txt",
-        output_name(root, "cover_letter"),
-    }
-    if target_directory.is_dir():
-        extras = sorted(
-            path.name
-            for path in target_directory.iterdir()
-            if path.name not in allowed_files and not path.name.startswith(".")
-        )
-        if extras:
-            errors.append("Unexpected files in tailored folder: " + ", ".join(extras))
+    extras = find_unexpected_files(target_directory, root)
+    if extras:
+        errors.append("Unexpected files in tailored folder: " + ", ".join(extras))
 
     report = None
     if not (root / MASTER_SOURCE_RELATIVE_PATH).is_file():

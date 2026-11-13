@@ -67,6 +67,11 @@ The expected Markdown structure is simple:
 
 ### 3. Add your own templates (optional)
 
+Academic research can live under Projects with an affiliation in the second
+heading field. Add source-only `**Historical Role:** <verified role>` metadata
+when local preferences allow presenting it as experience for a specific track;
+the validator checks that affiliation, role, and dates when it moves sections.
+
 The included Jake layout works out of the box. You can also add private, reusable content baselines:
 
 ```text

@@ -46,6 +46,52 @@ class ResumeValidationTests(unittest.TestCase):
         self.assertGreaterEqual(len(entries), 2)
         self.assertGreaterEqual(sum(len(entry.bullets) for entry in entries), 2)
 
+    def test_academic_research_can_stay_a_project_or_use_verified_historical_role(self) -> None:
+        from md_to_latex import parse_md_resume, render_jake
+        source = """# Sample Applicant
+email@example.com | 212-555-0100
+
+## Projects & Academic Research
+### Population Research | Example University
+*Jun 2026 – Aug 2026*
+- Evaluated population prediction models.
+
+**Historical Role:** Research Assistant
+"""
+        experience = source.replace(
+            "## Projects & Academic Research\n### Population Research | Example University",
+            "## Relevant Experience\n### Example University | Research Assistant",
+        )
+        for proposed in (source, experience):
+            with self.subTest(placement=proposed):
+                latex = render_jake(parse_md_resume(proposed))
+                self.assertEqual([], validate_tailored_tex(source, latex))
+                self.assertEqual([], validate_tailored_completeness(source, latex))
+        quant_latex = render_jake(parse_md_resume(experience))
+        self.assertTrue(any(
+            "Historical title changed" in error
+            for error in validate_tailored_tex(source, quant_latex.replace(
+                "{Research Assistant}", "{Research Director}"
+            ))
+        ))
+        self.assertTrue(any(
+            "Historical dates changed" in error
+            for error in validate_tailored_tex(source, quant_latex.replace("Jun 2026", "May 2026"))
+        ))
+        without_role = source.replace("**Historical Role:** Research Assistant", "")
+        self.assertIn(
+            "Unverified experience entry: Example University",
+            validate_tailored_tex(without_role, quant_latex),
+        )
+        commented_role = source.replace(
+            "**Historical Role:** Research Assistant",
+            "<!-- **Historical Role:** Research Assistant -->",
+        )
+        self.assertIn(
+            "Unverified experience entry: Example University",
+            validate_tailored_tex(commented_role, quant_latex),
+        )
+
     def test_parses_jake_entries_and_bullets(self) -> None:
         source = r"""
 \begin{document}
@@ -259,6 +305,22 @@ email@example.com | 212-555-0100
             writer.write(path)
             with self.assertRaisesRegex(ResumeValidationError, "compatibility version 1.5"):
                 verify_pdf(path)
+
+    def test_find_unexpected_files_allows_markdown_jd_and_qa_artifacts(self) -> None:
+        import validate_resume
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            for allowed in (
+                "_resume.tex", "Morgan_Le_Resume.pdf", "resume.md",
+                "cover_letter.md", "_cover_letter.tex", "Morgan_Le_Cover_Letter.pdf",
+                "job_description.txt", "job_description.md",
+                "resume-1.png", "cover_letter-1.png", "resume.diff", ".hidden_file",
+            ):
+                (folder / allowed).touch()
+            self.assertEqual([], validate_resume.find_unexpected_files(folder, REPOSITORY_ROOT))
+
+            (folder / "unexpected.docx").touch()
+            self.assertEqual(["unexpected.docx"], validate_resume.find_unexpected_files(folder, REPOSITORY_ROOT))
 
 
 if __name__ == "__main__":

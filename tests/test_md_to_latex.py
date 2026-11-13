@@ -81,6 +81,13 @@ class MdToLatexTests(unittest.TestCase):
         self.assertIn(r"\textbf{Technologies:} Python, SQL, Looker.", jake_tex)
         self.assertIn(r"\resumeProjectHeading", jake_tex)
 
+    def test_multiplication_sign_converts_to_latex_times(self) -> None:
+        md = "# Sample Applicant\nemail@example.com\n## Experience\n### Co | Title\n*2024*\n- Achieved 9× speedup.\n"
+        resume = parse_md_resume(md)
+        jake_tex = render_jake(resume)
+        self.assertIn(r"9$\times$ speedup", jake_tex)
+        self.assertNotIn("9×", jake_tex)
+
     def test_comment_blocks_and_inline_comments_never_render(self) -> None:
         markdown = """<!-- # Fictional Applicant -->
 # Sample Applicant

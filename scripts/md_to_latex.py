@@ -82,6 +82,9 @@ def md_inline_to_latex(text: str) -> str:
     for char in ["&", "%", "$", "#", "_"]:
         processed = processed.replace(char, f"\\{char}")
 
+    # Convert unicode multiplication sign to LaTeX math mode \times
+    processed = processed.replace("×", r"$\times$")
+
     # Bold: **text** -> \textbf{text}
     processed = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", processed)
 
@@ -497,7 +500,20 @@ def main() -> int:
         cmd = ["./scripts/build_resume.sh", rel_folder]
         print(f"Running: {' '.join(cmd)}")
         res = subprocess.run(cmd, cwd=repo_root)
-        return res.returncode
+        if res.returncode != 0:
+            return res.returncode
+        try:
+            sys.path.insert(0, str(repo_root / "scripts"))
+            from output_names import output_name
+            from render_pdf import render_pdf_to_png
+            pdf_path = folder / output_name(repo_root, "resume")
+            if pdf_path.is_file():
+                img = render_pdf_to_png(pdf_path, folder / "resume")
+                if img and img.is_file():
+                    print(f"Rendered review image: {img}")
+        except Exception:
+            pass
+        return 0
 
     return 0
 

@@ -11,12 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def checks(root: Path) -> dict[str, bool]:
+    has_renderer = bool(shutil.which("sips") or shutil.which("pdftoppm"))
     return {
         "Python 3.12 or newer": sys.version_info >= (3, 12),
         "uv": bool(shutil.which("uv")),
         "Bash": bool(shutil.which("bash")),
         "Tectonic": bool(shutil.which("tectonic")),
-        "Poppler (pdftoppm)": bool(shutil.which("pdftoppm")),
+        "PDF renderer (sips or pdftoppm)": has_renderer,
         "pypdf": importlib.util.find_spec("pypdf") is not None,
         "Private master/resume.md": (root / "master/resume.md").is_file(),
     }

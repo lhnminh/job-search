@@ -15,11 +15,16 @@ import uuid
 
 from verify_submission_pdf import ROOT, verify_submission
 from output_names import output_name
+from render_pdf import render_pdf_to_png
 from resume_validation import validate_tailored_completeness, validate_tailored_tex
 
 
 def baseline(value: str, filename: str) -> Path:
-    path = Path(value).resolve()
+    candidate = ROOT / "pre-made" / value
+    if candidate.exists():
+        path = candidate.resolve()
+    else:
+        path = Path(value).resolve()
     if not any(path.is_relative_to(ROOT / directory) for directory in ("pre-made", "master")):
         raise ValueError("Baselines must come from pre-made/ or master/.")
     if path.is_dir():
@@ -55,10 +60,20 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=ROOT, check=True)
 
 
+def render_page_image(pdf: Path, output_prefix: Path) -> Path:
+    sips_bin = shutil.which("sips")
+    if sips_bin and sips_bin != "renderer":
+        out_png = output_prefix.parent / f"{output_prefix.name}-1.png"
+        run([sips_bin, "-s", "format", "png", "-Z", "1600", str(pdf), "--out", str(out_png)])
+        return out_png
+    renderer = shutil.which("pdftoppm") or shutil.which("renderer") or "pdftoppm"
+    run([renderer, "-r", "120", "-png", str(pdf), str(output_prefix)])
+    return output_prefix.parent / f"{output_prefix.name}-1.png"
+
+
 def prepare(target: Path, bases: dict[str, Path], confirmed_facts: list[str]) -> Path:
-    renderer = shutil.which("pdftoppm")
-    if not renderer:
-        raise ValueError("Poppler is required for visual review. Install it with: brew install poppler")
+    if not shutil.which("sips") and not shutil.which("pdftoppm"):
+        raise ValueError("A PDF renderer is required for visual review (sips or pdftoppm).")
     # Read only explicitly selected inputs; never enumerate applications/.
     for kind in bases:
         if not (target / f"{kind}.md").is_file():
@@ -91,7 +106,7 @@ def prepare(target: Path, bases: dict[str, Path], confirmed_facts: list[str]) ->
             pdf_name = output_name(ROOT, kind)
             pdf = staging / pdf_name
             reports[kind] = verify_submission(pdf)
-            run([renderer, "-r", "120", "-png", str(pdf), str(staging / kind)])
+            render_page_image(pdf, staging / kind)
             output_names += [f"_{kind}.tex", pdf_name]
         (staging / "report.json").write_text(json.dumps({
             "target": str(target), "pdf_checks": reports,
@@ -103,7 +118,20 @@ def prepare(target: Path, bases: dict[str, Path], confirmed_facts: list[str]) ->
         shutil.copytree(staging, review)
         for name in output_names:
             shutil.copyfile(staging / name, target / name)
+    prune_reviews(reviews, keep=10)
     return review
+
+
+def prune_reviews(reviews_dir: Path, keep: int = 10) -> None:
+    if not reviews_dir.is_dir():
+        return
+    entries = [p for p in reviews_dir.iterdir() if p.is_dir()]
+    entries.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    for old in entries[keep:]:
+        try:
+            shutil.rmtree(old)
+        except OSError:
+            pass
 
 
 def main() -> int:
@@ -112,8 +140,15 @@ def main() -> int:
     parser.add_argument("--base", help="Resume baseline file or folder under pre-made/ or master/")
     parser.add_argument("--cover-letter-base", help="Cover letter baseline; supply both bases to build both")
     parser.add_argument("--confirmed-fact", action="append", default=[])
+    parser.add_argument("--clean", action="store_true", help="Remove older review folders before preparing")
     args = parser.parse_args()
     try:
+        if args.clean:
+            reviews_dir = ROOT / ".resume/reviews"
+            if reviews_dir.is_dir():
+                for old in reviews_dir.iterdir():
+                    if old.is_dir():
+                        shutil.rmtree(old, ignore_errors=True)
         target = target_folder(args.target)
         bases = {}
         if args.base:
@@ -126,6 +161,10 @@ def main() -> int:
         for kind in bases:
             print((review / f"{kind}.diff").read_text(encoding="utf-8"))
         print(f"PDF checks passed. Review files: {review}")
+        for kind in bases:
+            image_path = review / f"{kind}-1.png"
+            if image_path.is_file():
+                print(f"Review image ({kind}): {image_path}")
         print("Visual review pending: inspect the page images before submitting.")
         return 0
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
